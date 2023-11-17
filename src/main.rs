@@ -1,8 +1,8 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-use common::INF;
 use hittable::{HitRecord, Hittable};
+use interval::Interval;
 use ray::Ray;
 use vec3::Color;
 
@@ -14,6 +14,7 @@ use crate::{
 
 mod common;
 mod hittable;
+mod interval;
 mod ray;
 mod sphere;
 mod vec3;
@@ -31,7 +32,7 @@ fn write_color(output: &mut impl Write, pixel_color: Color) {
 
 fn ray_color(ray: Ray, world: &impl Hittable) -> Color {
     let mut rec = HitRecord::default();
-    if world.hit(ray, 0.0, INF, &mut rec) {
+    if world.hit(ray, Interval::new(0.0, f32::INFINITY), &mut rec) {
         return 0.5 * (rec.normal + Color::ONE);
     }
 
