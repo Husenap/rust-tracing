@@ -3,7 +3,7 @@ use crate::{
     vec3::{Point3, Vec3},
 };
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct HitRecord {
     pub p: Point3,
     pub normal: Vec3,
@@ -28,6 +28,20 @@ pub trait Hittable {
 
 pub struct HittableList {
     pub objects: Vec<Box<dyn Hittable>>,
+}
+impl HittableList {
+    pub fn new() -> Self {
+        Self {
+            objects: Vec::new(),
+        }
+    }
+    pub fn clear(&mut self) {
+        self.objects.clear();
+    }
+
+    pub fn add(&mut self, object: Box<dyn Hittable>) {
+        self.objects.push(object);
+    }
 }
 impl Hittable for HittableList {
     fn hit(&self, r: Ray, ray_tmin: f32, ray_tmax: f32, rec: &mut HitRecord) -> bool {

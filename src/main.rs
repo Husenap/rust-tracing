@@ -1,11 +1,18 @@
 use std::fs::File;
 use std::io::prelude::*;
 
+use common::INF;
+use hittable::{HitRecord, Hittable};
 use ray::Ray;
 use vec3::Color;
 
-use crate::vec3::{Point3, Vec3};
+use crate::{
+    hittable::HittableList,
+    sphere::Sphere,
+    vec3::{Point3, Vec3},
+};
 
+mod common;
 mod hittable;
 mod ray;
 mod sphere;
@@ -22,25 +29,10 @@ fn write_color(output: &mut impl Write, pixel_color: Color) {
     .expect("Should write to file");
 }
 
-fn hit_sphere(center: Point3, radius: f32, r: Ray) -> f32 {
-    let oc = r.origin - center;
-    let a = r.direction.length_squared();
-    let half_b = oc.dot(r.direction);
-    let c = oc.length_squared() - radius * radius;
-    let discriminant = half_b * half_b - a * c;
-
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-half_b - discriminant.sqrt()) / a
-    }
-}
-
-fn ray_color(ray: Ray) -> Color {
-    let t = hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray);
-    if t > 0.0 {
-        let n = (ray.at(t) - Vec3::new(0.0, 0.0, -1.0)).normalize();
-        return 0.5 * (n + Vec3::ONE);
+fn ray_color(ray: Ray, world: &impl Hittable) -> Color {
+    let mut rec = HitRecord::default();
+    if world.hit(ray, 0.0, INF, &mut rec) {
+        return 0.5 * (rec.normal + Color::ONE);
     }
 
     let unit_direction = ray.direction.normalize();
@@ -68,8 +60,17 @@ fn main() -> std::io::Result<()> {
         camera_center - Vec3::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
     let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    let mut output = File::create("output.ppm")?;
+    let mut world = HittableList::new();
+    world.add(Box::new(Sphere {
+        center: Point3::new(0.0, -100.5, -1.0),
+        radius: 100.0,
+    }));
+    world.add(Box::new(Sphere {
+        center: Point3::new(0.0, 0.0, -1.0),
+        radius: 0.5,
+    }));
 
+    let mut output = File::create("output.ppm")?;
     writeln!(output, "P3")?;
     writeln!(output, "{} {}", image_width, image_height)?;
     writeln!(output, "255")?;
@@ -82,7 +83,7 @@ fn main() -> std::io::Result<()> {
             let ray_direction = pixel_center - camera_center;
             let r = Ray::new(camera_center, ray_direction);
 
-            let pixel_color = ray_color(r);
+            let pixel_color = ray_color(r, &world);
 
             write_color(&mut output, pixel_color);
         }
