@@ -23,4 +23,7 @@ impl Interval {
     pub fn surrounds(&self, x: f32) -> bool {
         self.min < x && x < self.max
     }
+    pub fn clamp(&self, x: f32) -> f32 {
+        x.clamp(self.min, self.max)
+    }
 }
