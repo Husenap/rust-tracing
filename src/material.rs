@@ -8,7 +8,7 @@ use crate::{
 pub trait Material {
     fn scatter(
         &self,
-        r_in: Ray,
+        r_in: &Ray,
         rec: &HitRecord,
         attenuation: &mut Color,
         scattered: &mut Ray,
@@ -26,7 +26,7 @@ impl Lambertian {
 impl Material for Lambertian {
     fn scatter(
         &self,
-        _r_in: Ray,
+        _r_in: &Ray,
         rec: &HitRecord,
         attenuation: &mut Color,
         scattered: &mut Ray,
@@ -57,7 +57,7 @@ impl Metal {
 impl Material for Metal {
     fn scatter(
         &self,
-        r_in: Ray,
+        r_in: &Ray,
         rec: &HitRecord,
         attenuation: &mut Color,
         scattered: &mut Ray,
@@ -86,7 +86,7 @@ impl Dielectric {
 impl Material for Dielectric {
     fn scatter(
         &self,
-        r_in: Ray,
+        r_in: &Ray,
         rec: &HitRecord,
         attenuation: &mut Color,
         scattered: &mut Ray,

@@ -1,9 +1,8 @@
-use std::{fmt::DebugTuple, rc::Rc};
-
 use camera::CameraSettings;
 use common::FP;
 use material::{Dielectric, Lambertian, Metal};
 use rand::Rng;
+use std::rc::Rc;
 use vec3::Color;
 
 use crate::{camera::Camera, hittable::HittableList, sphere::Sphere, vec3::Point3};
@@ -82,10 +81,10 @@ fn main() -> std::io::Result<()> {
     )));
 
     let mut camera = Camera::new(CameraSettings {
-        //aspect_ratio: 16.0 / 9.0,
-        //image_width: 1200,
-        samples_per_pixel: 50,
-        max_depth: 10,
+        aspect_ratio: 16.0 / 9.0,
+        image_width: 1200,
+        samples_per_pixel: 500,
+        max_depth: 50,
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
         look_at: Point3::new(0.0, 0.0, 0.0),
@@ -94,6 +93,7 @@ fn main() -> std::io::Result<()> {
         focus_dist: 10.0,
         ..Default::default()
     });
+
     camera.render(&world);
 
     Ok(())

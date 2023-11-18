@@ -5,6 +5,7 @@ use crate::{
     interval::Interval,
     material::Material,
     ray::Ray,
+    sphere::Sphere,
     vec3::{Point3, Vec3},
 };
 
@@ -18,7 +19,7 @@ pub struct HitRecord {
 }
 
 impl HitRecord {
-    pub fn set_face_normal(&mut self, r: Ray, outward_normal: Vec3) {
+    pub fn set_face_normal(&mut self, r: &Ray, outward_normal: Vec3) {
         self.front_face = r.direction.dot(outward_normal) < 0.0;
         self.normal = if self.front_face {
             outward_normal
@@ -29,7 +30,7 @@ impl HitRecord {
 }
 
 pub trait Hittable {
-    fn hit(&self, r: Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;
+    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;
 }
 
 pub struct HittableList {
@@ -50,7 +51,7 @@ impl HittableList {
     }
 }
 impl Hittable for HittableList {
-    fn hit(&self, r: Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
+    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.max;
         let mut temp_rec = HitRecord::default();

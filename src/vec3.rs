@@ -3,7 +3,7 @@ use core::fmt;
 use rand::Rng;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vec3 {
     pub x: FP,
     pub y: FP,
@@ -99,36 +99,36 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn dot(self, rhs: Self) -> FP {
+    pub fn dot(&self, rhs: Self) -> FP {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
     #[inline]
-    pub fn length_squared(self) -> FP {
-        self.dot(self)
+    pub fn length_squared(&self) -> FP {
+        self.dot(*self)
     }
 
-    pub fn near_zero(self) -> bool {
+    pub fn near_zero(&self) -> bool {
         const EPS: FP = 1e-8;
         self.x.abs() < EPS && self.y.abs() < EPS && self.z.abs() < EPS
     }
 
     #[inline]
-    pub fn length(self) -> FP {
-        self.dot(self).sqrt()
+    pub fn length(&self) -> FP {
+        self.dot(*self).sqrt()
     }
 
     #[inline]
-    pub fn length_recip(self) -> FP {
+    pub fn length_recip(&self) -> FP {
         self.length().recip()
     }
 
     #[inline]
-    pub fn normalize(self) -> Self {
-        self * self.length_recip()
+    pub fn normalize(&self) -> Self {
+        *self * self.length_recip()
     }
 
-    pub fn cross(self, rhs: Self) -> Self {
+    pub fn cross(&self, rhs: Self) -> Self {
         Self {
             x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
