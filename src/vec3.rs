@@ -19,6 +19,12 @@ impl Vec3 {
     pub const NEG_ONE: Self = Self::splat(-1.0);
     pub const INFINITY: Self = Self::splat(FP::INFINITY);
     pub const NEG_INFINITY: Self = Self::splat(FP::NEG_INFINITY);
+    pub const RIGHT: Self = Self::new(1.0, 0.0, 0.0);
+    pub const UP: Self = Self::new(0.0, 1.0, 0.0);
+    pub const FORWARD: Self = Self::new(0.0, 0.0, 1.0);
+    pub const LEFT: Self = Self::new(-1.0, 0.0, 0.0);
+    pub const DOWN: Self = Self::new(0.0, -1.0, 0.0);
+    pub const BACKWARD: Self = Self::new(0.0, 0.0, -1.0);
 
     #[inline(always)]
     pub const fn new(x: FP, y: FP, z: FP) -> Self {
@@ -64,6 +70,21 @@ impl Vec3 {
             -on_unit_sphere
         }
     }
+
+    #[inline]
+    pub fn random_in_unit_disk() -> Self {
+        loop {
+            let p = Self::new(
+                rand::thread_rng().gen_range(-1.0..1.0),
+                rand::thread_rng().gen_range(-1.0..1.0),
+                0.0,
+            );
+            if p.length_squared() < 1.0 {
+                return p;
+            }
+        }
+    }
+
     #[inline]
     pub fn reflect(&self, n: Self) -> Self {
         *self - 2.0 * self.dot(n) * n
