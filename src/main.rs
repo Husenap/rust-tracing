@@ -20,7 +20,7 @@ fn main() -> std::io::Result<()> {
         radius: 0.5,
     }));
 
-    let mut camera = Camera::new(16.0 / 9.0, 400, 10);
+    let mut camera = Camera::new(16.0 / 9.0, 400, 100);
     camera.render(&world);
 
     Ok(())

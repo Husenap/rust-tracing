@@ -1,6 +1,8 @@
 use core::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use rand::Rng;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
     pub x: f32,
@@ -26,6 +28,36 @@ impl Vec3 {
     #[inline]
     pub const fn splat(v: f32) -> Self {
         Self { x: v, y: v, z: v }
+    }
+
+    pub fn random() -> Self {
+        Self::new(rand::random(), rand::random(), rand::random())
+    }
+    pub fn random_range(min: f32, max: f32) -> Self {
+        Self::new(
+            rand::thread_rng().gen_range(min..max),
+            rand::thread_rng().gen_range(min..max),
+            rand::thread_rng().gen_range(min..max),
+        )
+    }
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let p = Self::random_range(-1.0, 1.0);
+            if p.length_squared() < 1.0 {
+                return p;
+            }
+        }
+    }
+    pub fn random_unit_vector() -> Self {
+        Self::random_in_unit_sphere().normalize()
+    }
+    pub fn random_on_hemisphere(normal: Self) -> Self {
+        let on_unit_sphere = Self::random_unit_vector();
+        if on_unit_sphere.dot(normal) > 0.0 {
+            on_unit_sphere
+        } else {
+            -on_unit_sphere
+        }
     }
 
     #[inline]
