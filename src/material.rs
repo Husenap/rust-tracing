@@ -76,6 +76,12 @@ impl Dielectric {
     pub fn new(ir: FP) -> Self {
         Self { ir }
     }
+
+    fn reflectance(cosine: FP, ref_idx: FP) -> FP {
+        let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+        r0 = r0 * r0;
+        r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
+    }
 }
 impl Material for Dielectric {
     fn scatter(
@@ -93,9 +99,18 @@ impl Material for Dielectric {
         };
 
         let unit_direction = r_in.direction.normalize();
-        let refracted = unit_direction.refract(rec.normal, refraction_ratio);
+        let cos_theta = (-unit_direction).dot(rec.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
-        *scattered = Ray::new(rec.p, refracted);
+        let direction = if refraction_ratio * sin_theta > 1.0
+            || Dielectric::reflectance(cos_theta, refraction_ratio) > rand::random()
+        {
+            unit_direction.reflect(rec.normal)
+        } else {
+            unit_direction.refract(rec.normal, refraction_ratio)
+        };
+
+        *scattered = Ray::new(rec.p, direction);
         true
     }
 }
