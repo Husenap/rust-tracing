@@ -1,29 +1,31 @@
+use crate::common::FP;
+
 pub struct Interval {
-    pub min: f32,
-    pub max: f32,
+    pub min: FP,
+    pub max: FP,
 }
 
 impl Interval {
     pub const EMPTY: Self = Self {
-        min: f32::INFINITY,
-        max: f32::NEG_INFINITY,
+        min: FP::INFINITY,
+        max: FP::NEG_INFINITY,
     };
     pub const UNIVERSE: Self = Self {
-        min: f32::NEG_INFINITY,
-        max: f32::INFINITY,
+        min: FP::NEG_INFINITY,
+        max: FP::INFINITY,
     };
 
-    pub fn new(min: f32, max: f32) -> Self {
+    pub fn new(min: FP, max: FP) -> Self {
         Self { min, max }
     }
 
-    pub fn contains(&self, x: f32) -> bool {
+    pub fn contains(&self, x: FP) -> bool {
         self.min <= x && x <= self.max
     }
-    pub fn surrounds(&self, x: f32) -> bool {
+    pub fn surrounds(&self, x: FP) -> bool {
         self.min < x && x < self.max
     }
-    pub fn clamp(&self, x: f32) -> f32 {
+    pub fn clamp(&self, x: FP) -> FP {
         x.clamp(self.min, self.max)
     }
 }

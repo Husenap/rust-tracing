@@ -98,8 +98,8 @@ impl Camera {
             let mut scattered = Ray::default();
             let mut attenuation = Color::default();
 
-            if let Some(mat) = &rec.mat {
-                if mat.scatter(ray, &rec, &mut attenuation, &mut scattered) {
+            if let Some(mat) = rec.mat {
+                if mat.scatter(ray, rec, &mut attenuation, &mut scattered) {
                     return attenuation * self.ray_color(scattered, depth - 1, world);
                 }
             }
@@ -112,3 +112,4 @@ impl Camera {
         (1.0 - a) * Color::ONE + a * Color::new(0.5, 0.7, 1.0)
     }
 }
+

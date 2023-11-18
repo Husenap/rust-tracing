@@ -1,13 +1,13 @@
+use crate::common::FP;
 use core::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-
 use rand::Rng;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub x: FP,
+    pub y: FP,
+    pub z: FP,
 }
 
 pub type Point3 = Vec3;
@@ -17,29 +17,32 @@ impl Vec3 {
     pub const ZERO: Self = Self::splat(0.0);
     pub const ONE: Self = Self::splat(1.0);
     pub const NEG_ONE: Self = Self::splat(-1.0);
-    pub const INFINITY: Self = Self::splat(f32::INFINITY);
-    pub const NEG_INFINITY: Self = Self::splat(f32::NEG_INFINITY);
+    pub const INFINITY: Self = Self::splat(FP::INFINITY);
+    pub const NEG_INFINITY: Self = Self::splat(FP::NEG_INFINITY);
 
     #[inline(always)]
-    pub const fn new(x: f32, y: f32, z: f32) -> Self {
+    pub const fn new(x: FP, y: FP, z: FP) -> Self {
         Self { x, y, z }
     }
 
     #[inline]
-    pub const fn splat(v: f32) -> Self {
+    pub const fn splat(v: FP) -> Self {
         Self { x: v, y: v, z: v }
     }
 
+    #[inline]
     pub fn random() -> Self {
         Self::new(rand::random(), rand::random(), rand::random())
     }
-    pub fn random_range(min: f32, max: f32) -> Self {
+    #[inline]
+    pub fn random_range(min: FP, max: FP) -> Self {
         Self::new(
             rand::thread_rng().gen_range(min..max),
             rand::thread_rng().gen_range(min..max),
             rand::thread_rng().gen_range(min..max),
         )
     }
+    #[inline]
     pub fn random_in_unit_sphere() -> Self {
         loop {
             let p = Self::random_range(-1.0, 1.0);
@@ -48,9 +51,11 @@ impl Vec3 {
             }
         }
     }
+    #[inline]
     pub fn random_unit_vector() -> Self {
         Self::random_in_unit_sphere().normalize()
     }
+    #[inline]
     pub fn random_on_hemisphere(normal: Self) -> Self {
         let on_unit_sphere = Self::random_unit_vector();
         if on_unit_sphere.dot(normal) > 0.0 {
@@ -59,24 +64,33 @@ impl Vec3 {
             -on_unit_sphere
         }
     }
+    #[inline]
+    pub fn reflect(&self, n: Vec3) -> Vec3 {
+        *self - 2.0 * self.dot(n) * n
+    }
 
     #[inline]
-    pub fn dot(self, rhs: Self) -> f32 {
+    pub fn dot(self, rhs: Self) -> FP {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
     #[inline]
-    pub fn length_squared(self) -> f32 {
+    pub fn length_squared(self) -> FP {
         self.dot(self)
     }
 
+    pub fn near_zero(self) -> bool {
+        const EPS: FP = 1e-8;
+        self.x.abs() < EPS && self.y.abs() < EPS && self.z.abs() < EPS
+    }
+
     #[inline]
-    pub fn length(self) -> f32 {
+    pub fn length(self) -> FP {
         self.dot(self).sqrt()
     }
 
     #[inline]
-    pub fn length_recip(self) -> f32 {
+    pub fn length_recip(self) -> FP {
         self.length().recip()
     }
 
@@ -167,7 +181,7 @@ impl Mul for Vec3 {
     }
 }
 
-impl Mul<Vec3> for f32 {
+impl Mul<Vec3> for FP {
     type Output = Vec3;
     #[inline]
     fn mul(self, rhs: Vec3) -> Self::Output {
@@ -175,10 +189,10 @@ impl Mul<Vec3> for f32 {
     }
 }
 
-impl Mul<f32> for Vec3 {
+impl Mul<FP> for Vec3 {
     type Output = Self;
     #[inline]
-    fn mul(self, s: f32) -> Self::Output {
+    fn mul(self, s: FP) -> Self::Output {
         Self {
             x: self.x * s,
             y: self.y * s,
@@ -187,26 +201,26 @@ impl Mul<f32> for Vec3 {
     }
 }
 
-impl MulAssign<f32> for Vec3 {
+impl MulAssign<FP> for Vec3 {
     #[inline]
-    fn mul_assign(&mut self, s: f32) {
+    fn mul_assign(&mut self, s: FP) {
         self.x *= s;
         self.y *= s;
         self.z *= s;
     }
 }
 
-impl Div<f32> for Vec3 {
+impl Div<FP> for Vec3 {
     type Output = Self;
     #[inline]
-    fn div(self, rhs: f32) -> Self::Output {
+    fn div(self, rhs: FP) -> Self::Output {
         self * (1.0 / rhs)
     }
 }
 
-impl DivAssign<f32> for Vec3 {
+impl DivAssign<FP> for Vec3 {
     #[inline]
-    fn div_assign(&mut self, s: f32) {
+    fn div_assign(&mut self, s: FP) {
         self.x /= s;
         self.y /= s;
         self.z /= s;
