@@ -1,13 +1,8 @@
 use crate::common::{degrees_to_radians, FP};
 use crate::{
-    color::write_color,
-    hittable::{HitRecord, Hittable},
-    interval::Interval,
     ray::Ray,
-    vec3::{Color, Point3, Vec3},
+    vec3::{Point3, Vec3},
 };
-use std::fs::File;
-use std::io::{prelude::*, stdout};
 
 pub struct CameraSettings {
     pub aspect_ratio: FP,
@@ -38,10 +33,10 @@ impl Default for CameraSettings {
     }
 }
 pub struct Camera {
-    image_width: usize,
-    image_height: usize,
-    samples_per_pixel: i32,
-    max_depth: i32,
+    pub image_width: usize,
+    pub image_height: usize,
+    pub samples_per_pixel: i32,
+    pub max_depth: i32,
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -49,7 +44,6 @@ pub struct Camera {
     defocus_angle: FP,
     defocus_disk_u: Vec3,
     defocus_disk_v: Vec3,
-    output: File,
 }
 
 impl Camera {
@@ -76,8 +70,8 @@ impl Camera {
         let viewport_width = viewport_height * (image_width as FP / image_height as FP);
 
         let w = (look_from - look_at).normalize();
-        let u = vup.cross(w).normalize();
-        let v = w.cross(u);
+        let u = vup.cross(&w).normalize();
+        let v = w.cross(&u);
 
         let viewport_u = viewport_width * u;
         let viewport_v = -viewport_height * v;
@@ -94,11 +88,6 @@ impl Camera {
         let defocus_disk_u = u * defocus_radius;
         let defocus_disk_v = v * defocus_radius;
 
-        let mut output = File::create("output.ppm").unwrap();
-        writeln!(output, "P3").unwrap();
-        writeln!(output, "{} {}", image_width, image_height).unwrap();
-        writeln!(output, "255").unwrap();
-
         Self {
             image_width,
             image_height,
@@ -111,37 +100,10 @@ impl Camera {
             defocus_angle,
             defocus_disk_u,
             defocus_disk_v,
-            output,
         }
     }
 
-    pub fn render(&mut self, world: &impl Hittable) {
-        let mut pixels = vec![Color::ZERO; self.image_width * self.image_height];
-
-        for j in 0..self.image_height {
-            print!(
-                "\rScanlines remaining: {}           ",
-                self.image_height - j
-            );
-            stdout().flush().unwrap();
-            for i in 0..self.image_width {
-                let spp = self.samples_per_pixel;
-                let mut pixel_color = Color::ZERO;
-                for _ in 0..spp {
-                    let r = self.get_ray(i, j);
-                    pixel_color += self.ray_color(&r, self.max_depth, world);
-                }
-                pixels[j * self.image_width + i] = pixel_color;
-            }
-        }
-        println!("\rDone!                                        ");
-
-        for pixel_color in pixels {
-            write_color(&mut self.output, pixel_color, self.samples_per_pixel);
-        }
-    }
-
-    fn get_ray(&self, i: usize, j: usize) -> Ray {
+    pub fn get_ray(&self, i: usize, j: usize) -> Ray {
         let pixel_center =
             self.pixel00_loc + (i as FP * self.pixel_delta_u) + (j as FP * self.pixel_delta_v);
         let pixel_sample = pixel_center + self.pixel_sample_square();
@@ -165,29 +127,5 @@ impl Camera {
         let px = -0.5 + rand::random::<FP>();
         let py = -0.5 + rand::random::<FP>();
         px * self.pixel_delta_u + py * self.pixel_delta_v
-    }
-
-    fn ray_color(&self, ray: &Ray, depth: i32, world: &impl Hittable) -> Color {
-        if depth <= 0 {
-            return Color::ZERO;
-        }
-
-        let mut rec = HitRecord::default();
-        if world.hit(ray, Interval::new(0.001, FP::INFINITY), &mut rec) {
-            let mut scattered = Ray::default();
-            let mut attenuation = Color::default();
-
-            if let Some(mat) = &rec.mat {
-                if mat.scatter(ray, &rec, &mut attenuation, &mut scattered) {
-                    return attenuation * self.ray_color(&scattered, depth - 1, world);
-                }
-            }
-
-            return Color::ZERO;
-        }
-
-        let unit_direction = ray.direction.normalize();
-        let a = 0.5 * (unit_direction.y + 1.0);
-        (1.0 - a) * Color::ONE + a * Color::new(0.5, 0.7, 1.0)
     }
 }

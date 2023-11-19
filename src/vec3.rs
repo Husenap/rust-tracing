@@ -62,9 +62,9 @@ impl Vec3 {
         Self::random_in_unit_sphere().normalize()
     }
     #[inline]
-    pub fn random_on_hemisphere(normal: Self) -> Self {
+    pub fn random_on_hemisphere(normal: &Self) -> Self {
         let on_unit_sphere = Self::random_unit_vector();
-        if on_unit_sphere.dot(normal) > 0.0 {
+        if on_unit_sphere.dot(&normal) > 0.0 {
             on_unit_sphere
         } else {
             -on_unit_sphere
@@ -86,26 +86,26 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn reflect(&self, n: Self) -> Self {
-        *self - 2.0 * self.dot(n) * n
+    pub fn reflect(&self, n: &Self) -> Self {
+        *self - 2.0 * self.dot(n) * *n
     }
 
     #[inline]
-    pub fn refract(&self, n: Self, etai_over_etat: FP) -> Self {
+    pub fn refract(&self, n: &Self, etai_over_etat: FP) -> Self {
         let cos_theta = (-*self).dot(n).min(1.0);
-        let r_out_perp = etai_over_etat * (*self + cos_theta * n);
-        let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * n;
+        let r_out_perp = etai_over_etat * (*self + cos_theta * *n);
+        let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * *n;
         r_out_perp + r_out_parallel
     }
 
     #[inline]
-    pub fn dot(&self, rhs: Self) -> FP {
+    pub fn dot(&self, rhs: &Self) -> FP {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
     #[inline]
     pub fn length_squared(&self) -> FP {
-        self.dot(*self)
+        self.dot(self)
     }
 
     pub fn near_zero(&self) -> bool {
@@ -115,7 +115,7 @@ impl Vec3 {
 
     #[inline]
     pub fn length(&self) -> FP {
-        self.dot(*self).sqrt()
+        self.dot(self).sqrt()
     }
 
     #[inline]
@@ -128,7 +128,7 @@ impl Vec3 {
         *self * self.length_recip()
     }
 
-    pub fn cross(&self, rhs: Self) -> Self {
+    pub fn cross(&self, rhs: &Self) -> Self {
         Self {
             x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
