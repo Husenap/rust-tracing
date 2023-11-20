@@ -1,4 +1,5 @@
 use crate::{
+    aabb::AABB,
     common::FP,
     interval::Interval,
     material::Material,
@@ -33,30 +34,37 @@ impl<'a> HitRecord<'a> {
 }
 
 pub trait Hittable: Sync {
-    fn hit(&self, r: &Ray, ray_t: Interval) -> Option<HitRecord>;
+    fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord>;
+    fn bounding_box(&self) -> AABB;
 }
 
 #[derive(Default)]
 pub struct HittableList {
     pub objects: Vec<Box<dyn Hittable>>,
+    bbox: AABB,
 }
 impl HittableList {
     pub fn add(&mut self, object: impl Hittable + 'static) {
+        self.bbox = AABB::new_from_aabbs(self.bbox, object.bounding_box());
         self.objects.push(Box::new(object));
     }
 }
 impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         let mut closest_so_far = ray_t.max;
         let mut hit_anything = None;
 
         for object in &self.objects {
-            if let Some(hit) = object.hit(r, Interval::new(ray_t.min, closest_so_far)) {
+            if let Some(hit) = object.hit(r, &Interval::new(ray_t.min, closest_so_far)) {
                 closest_so_far = hit.t;
                 hit_anything = Some(hit);
             }
         }
 
         hit_anything
+    }
+
+    fn bounding_box(&self) -> AABB {
+        self.bbox
     }
 }

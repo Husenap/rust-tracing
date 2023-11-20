@@ -1,12 +1,17 @@
+use std::time::Instant;
+
+use bvh::BVHNode;
 use camera::CameraSettings;
 use common::FP;
 use material::{Dielectric, Lambertian, Metal};
 use rand::Rng;
 use renderer::render;
-use vec3::Color;
+use vec3::{Color, Vec3};
 
 use crate::{camera::Camera, hittable::HittableList, sphere::Sphere, vec3::Point3};
 
+mod aabb;
+mod bvh;
 mod camera;
 mod color;
 mod common;
@@ -36,11 +41,14 @@ fn main() -> std::io::Result<()> {
 
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
-                    world.add(Sphere::new(
-                        center,
-                        0.2,
-                        Lambertian::new(Color::random() * Color::random()),
-                    ));
+                    world.add(
+                        Sphere::new(
+                            center,
+                            0.2,
+                            Lambertian::new(Color::random() * Color::random()),
+                        )
+                        .with_target(center + Vec3::UP * rand::random::<FP>() * 0.5),
+                    );
                 } else if choose_mat < 0.95 {
                     world.add(Sphere::new(
                         center,
@@ -73,10 +81,12 @@ fn main() -> std::io::Result<()> {
         Metal::new(Color::new(0.7, 0.6, 0.5), 0.0),
     ));
 
+    let bvh = BVHNode::new(&mut world);
+
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
         image_width: 400,
-        samples_per_pixel: 50,
+        samples_per_pixel: 256,
         max_depth: 8,
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
@@ -87,7 +97,9 @@ fn main() -> std::io::Result<()> {
         ..Default::default()
     });
 
+    let now = Instant::now();
     render(&camera, &world);
+    println!("Render time: {:.2?}", now.elapsed());
 
     Ok(())
 }

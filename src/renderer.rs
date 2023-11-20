@@ -43,7 +43,7 @@ fn ray_color(ray: &Ray, depth: i32, world: &impl Hittable) -> Color {
         return Color::ZERO;
     }
 
-    if let Some(hit) = world.hit(ray, Interval::new(0.001, FP::INFINITY)) {
+    if let Some(hit) = world.hit(ray, &Interval::new(0.001, FP::INFINITY)) {
         if let Some((scattered, attenuation)) = hit.mat.scatter(ray, &hit) {
             return attenuation * ray_color(&scattered, depth - 1, world);
         }
