@@ -81,12 +81,14 @@ fn main() -> std::io::Result<()> {
         Metal::new(Color::new(0.7, 0.6, 0.5), 0.0),
     ));
 
+    let now = Instant::now();
     let bvh = BVHNode::new(&mut world);
+    println!("Building BVH: {:.2?}", now.elapsed());
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
         image_width: 400,
-        samples_per_pixel: 256,
+        samples_per_pixel: 512,
         max_depth: 8,
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
@@ -98,7 +100,7 @@ fn main() -> std::io::Result<()> {
     });
 
     let now = Instant::now();
-    render(&camera, &world);
+    render(&camera, &bvh);
     println!("Render time: {:.2?}", now.elapsed());
 
     Ok(())

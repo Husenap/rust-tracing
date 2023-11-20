@@ -1,7 +1,7 @@
+use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 use std::fs::File;
 use std::io::Write;
-
-use rayon::prelude::*;
 
 use crate::{
     camera::Camera, color::write_color, common::FP, hittable::Hittable, interval::Interval,
@@ -12,6 +12,14 @@ pub fn render(camera: &Camera, world: &impl Hittable) {
     let height = camera.image_height;
     let width = camera.image_width;
     let spp = camera.samples_per_pixel;
+
+    let bar = &Box::new(ProgressBar::new((width * height / 64) as u64));
+    bar.set_prefix("🎨  Rendering");
+    bar.set_style(
+        ProgressStyle::with_template("{prefix:.bold} [{eta_precise}]▕{bar:64.}▏{percent}%")
+            .unwrap()
+            .progress_chars("█▉▊▋▌▍▎▏  "),
+    );
 
     let pixels: Vec<Color> = (0..width * height)
         .into_par_iter()
@@ -25,9 +33,15 @@ pub fn render(camera: &Camera, world: &impl Hittable) {
                 pixel_color += ray_color(&r, camera.max_depth, world);
             }
 
+            if screen_pos % 64 == 0 {
+                bar.inc(1);
+            }
+
             pixel_color
         })
         .collect();
+
+    bar.finish();
 
     let mut output = File::create("output.ppm").unwrap();
     writeln!(output, "P3").unwrap();
