@@ -12,4 +12,5 @@ cargo run --release
 
 ![](screenshots/screenshot_1.png)
 
-![](screenshots/live_render.mp4)
+https://github.com/Husenap/rust-tracing/assets/6496177/c71fdf9a-9200-48f7-abb1-3478b8bf8d71
+
