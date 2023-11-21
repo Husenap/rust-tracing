@@ -12,26 +12,26 @@ impl AABB {
         Self { x, y, z }
     }
     pub fn new_from_points(a: Point3, b: Point3) -> Self {
-        Self {
-            x: Interval::new(a.x.min(b.x), a.x.max(b.x)),
-            y: Interval::new(a.y.min(b.y), a.y.max(b.y)),
-            z: Interval::new(a.z.min(b.z), a.z.max(b.z)),
-        }
+        Self::new(
+            Interval::new(a.x.min(b.x), a.x.max(b.x)),
+            Interval::new(a.y.min(b.y), a.y.max(b.y)),
+            Interval::new(a.z.min(b.z), a.z.max(b.z)),
+        )
     }
     pub fn new_from_aabbs(a: AABB, b: AABB) -> Self {
-        Self {
-            x: Interval::new_from_intervals(a.x, b.x),
-            y: Interval::new_from_intervals(a.y, b.y),
-            z: Interval::new_from_intervals(a.z, b.z),
-        }
+        Self::new(
+            Interval::new_from_intervals(a.x, b.x),
+            Interval::new_from_intervals(a.y, b.y),
+            Interval::new_from_intervals(a.z, b.z),
+        )
     }
 
     pub fn axis(&self, n: usize) -> &Interval {
         assert!(n <= 2);
         match n {
+            0 => &self.x,
             1 => &self.y,
-            2 => &self.z,
-            _ => &self.x,
+            _ => &self.z,
         }
     }
 

@@ -5,17 +5,17 @@ fn linear_to_gamma(linear_component: FP) -> FP {
     linear_component.powf(0.4545)
 }
 
-pub fn write_color(output: &mut impl std::io::Write, pixel_color: Color, samples_per_pixel: i32) {
-    let rgb = pixel_color / samples_per_pixel as FP;
-
+pub fn color_to_rgb(rgb: Color) -> [u8; 3] {
     let intensity = Interval::new(0.0, 0.999);
+    [
+        (256.0 * intensity.clamp(linear_to_gamma(rgb.x))) as u8,
+        (256.0 * intensity.clamp(linear_to_gamma(rgb.y))) as u8,
+        (256.0 * intensity.clamp(linear_to_gamma(rgb.z))) as u8,
+    ]
+}
 
-    writeln!(
-        *output,
-        "{} {} {}",
-        (256.0 * intensity.clamp(linear_to_gamma(rgb.x))) as i32,
-        (256.0 * intensity.clamp(linear_to_gamma(rgb.y))) as i32,
-        (256.0 * intensity.clamp(linear_to_gamma(rgb.z))) as i32
-    )
-    .expect("Should write to file");
+pub fn write_color(output: &mut impl std::io::Write, pixel_color: Color) {
+    let [r, g, b] = color_to_rgb(pixel_color);
+
+    writeln!(*output, "{} {} {}", r, g, b,).expect("Should write to file");
 }

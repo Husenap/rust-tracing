@@ -4,8 +4,17 @@
 
 ### Running
 
+Render normally to file
 ```
 cargo run --release
+```
+Render with live preview
+```
+cargo run --release -- -l
+```
+See rest of commands
+```
+cargo run --release -- -h
 ```
 
 ### Screenshots

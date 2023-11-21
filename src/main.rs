@@ -1,14 +1,15 @@
-use std::time::Instant;
-
+use crate::{
+    camera::Camera, hittable::HittableList, renderer::live_render, sphere::Sphere, vec3::Point3,
+};
 use bvh::BVHNode;
 use camera::CameraSettings;
+use clap::Parser;
 use common::FP;
 use material::{Dielectric, Lambertian, Metal};
 use rand::Rng;
 use renderer::render;
+use std::time::Instant;
 use vec3::{Color, Vec3};
-
-use crate::{camera::Camera, hittable::HittableList, sphere::Sphere, vec3::Point3};
 
 mod aabb;
 mod bvh;
@@ -23,7 +24,18 @@ mod renderer;
 mod sphere;
 mod vec3;
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Enable live rendering
+    #[arg(short, long)]
+    live: bool,
+}
+
 fn main() -> std::io::Result<()> {
+    let args = Args::parse();
+    println!("Args: {:?}", args);
+
     let mut world = HittableList::default();
 
     let ground_material = Lambertian::new(Color::splat(0.5));
@@ -88,8 +100,8 @@ fn main() -> std::io::Result<()> {
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
         image_width: 400,
-        samples_per_pixel: 512,
-        max_depth: 8,
+        samples_per_pixel: 64,
+        max_depth: 16,
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
         look_at: Point3::new(0.0, 0.0, 0.0),
@@ -99,9 +111,13 @@ fn main() -> std::io::Result<()> {
         ..Default::default()
     });
 
-    let now = Instant::now();
-    render(&camera, &bvh);
-    println!("Render time: {:.2?}", now.elapsed());
+    if args.live {
+        live_render(&camera, &bvh);
+    } else {
+        let now = Instant::now();
+        render(&camera, &bvh);
+        println!("Render time: {:.2?}", now.elapsed());
+    }
 
     Ok(())
 }

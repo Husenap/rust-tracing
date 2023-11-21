@@ -1,4 +1,4 @@
-pub type FP = f32;
+pub type FP = f64;
 
 pub const PI: FP = std::f64::consts::PI as FP;
 
