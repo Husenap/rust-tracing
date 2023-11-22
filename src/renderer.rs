@@ -1,10 +1,3 @@
-use fltk::{app, prelude::*, window::Window};
-use indicatif::{ProgressBar, ProgressStyle};
-use pixels::{Pixels, SurfaceTexture};
-use rayon::prelude::*;
-use std::io::Write;
-use std::{fs::File, time::Instant};
-
 use crate::{
     camera::Camera,
     color::{color_to_rgb, write_color},
@@ -14,6 +7,13 @@ use crate::{
     ray::Ray,
     vec3::Color,
 };
+use fltk::{app, prelude::*, window::Window};
+use image::{codecs::png::CompressionType, ImageEncoder};
+use indicatif::{ProgressBar, ProgressStyle};
+use pixels::{Pixels, SurfaceTexture};
+use rayon::prelude::*;
+use std::io::Write;
+use std::{fs::File, time::Instant};
 
 pub fn render(camera: &Camera, world: &impl Hittable) {
     let height = camera.image_height;
@@ -50,15 +50,29 @@ pub fn render(camera: &Camera, world: &impl Hittable) {
         })
         .collect();
     bar.finish();
-
     println!("Render time: {:.2?}", now.elapsed());
 
-    let mut output = File::create("output.ppm").unwrap();
-    writeln!(output, "P3").unwrap();
-    writeln!(output, "{} {}", width, height).unwrap();
-    writeln!(output, "255").unwrap();
-    for pixel_color in raw_pixels {
-        write_color(&mut output, pixel_color / spp as FP);
+    {
+        let now = Instant::now();
+        let pixels = raw_pixels
+            .into_iter()
+            .flat_map(|c| color_to_rgb(&(c / spp as FP)).to_vec())
+            .collect::<Vec<u8>>();
+        let output = File::create("output.png").unwrap();
+        let encoder = image::codecs::png::PngEncoder::new_with_quality(
+            output,
+            CompressionType::Default,
+            image::codecs::png::FilterType::Adaptive,
+        );
+        encoder
+            .write_image(
+                pixels.as_slice(),
+                width as u32,
+                height as u32,
+                image::ColorType::Rgb8,
+            )
+            .expect("Should've encoded the image into a file.");
+        println!("PNG encoding: {:.2?}", now.elapsed());
     }
 }
 
@@ -108,18 +122,14 @@ pub fn live_render(camera: &Camera, world: &impl Hittable) {
                 .par_chunks_exact_mut(4)
                 .enumerate()
                 .for_each(|(i, pixel)| {
-                    let color = raw_pixels[i];
-
-                    let [r, g, b] = color_to_rgb(color);
-
+                    let [r, g, b] = color_to_rgb(&raw_pixels[i]);
                     let rgba = [r, g, b, 0xff];
-
                     pixel.copy_from_slice(&rgba);
                 });
-            if let Err(err) = pixels.render() {
-                println!("pixels.render: {}", err);
-                app.quit();
-            }
+        }
+        if let Err(err) = pixels.render() {
+            println!("pixels.render: {}", err);
+            app.quit();
         }
 
         app::flush();

@@ -45,13 +45,7 @@ struct Args {
 fn random_balls() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    //let ground_material = Lambertian::new(Color::splat(0.5));
-    let checker = CheckerTexture::new(
-        0.64,
-        SolidColor::new(0.2, 0.3, 0.1),
-        CheckerTexture::new_from_colors(0.16, Color::new(0.1, 0.2, 0.3), Color::splat(0.9)),
-    );
-    let ground_material = Lambertian::new(checker.clone());
+    let ground_material = Lambertian::new(SolidColor::from(Color::splat(0.5)));
     world.add(Sphere::new(Point3::DOWN * 1000.0, 1000.0, ground_material));
 
     for a in -11..11 {
@@ -103,16 +97,9 @@ fn random_balls() -> (HittableList, Camera) {
         Metal::new(Color::new(0.7, 0.6, 0.5), 0.0),
     ));
 
-    let earth_texture = ImageTexture::new("assets/monkes.jpg");
-    world.add(Sphere::new(
-        Point3::new(0.0, 3.0, 0.0),
-        3.0,
-        Lambertian::new(earth_texture),
-    ));
-
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
-        image_width: 400,
+        image_width: 600,
         samples_per_pixel: 128,
         max_depth: 8,
 
@@ -147,7 +134,7 @@ fn two_spheres() -> (HittableList, Camera) {
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
-        image_width: 400,
+        image_width: 1200,
         samples_per_pixel: 128,
         max_depth: 8,
 
