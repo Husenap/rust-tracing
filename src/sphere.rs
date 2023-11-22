@@ -1,6 +1,6 @@
 use crate::{
     aabb::AABB,
-    common::FP,
+    common::{FP, PI},
     hittable::{HitRecord, Hittable},
     interval::Interval,
     material::Material,
@@ -43,7 +43,12 @@ impl<M: Material> Sphere<M> {
         }
     }
 
-    pub fn at(&self, time: FP) -> Point3 {
+    fn get_sphere_uv(&self, n: &Vec3) -> (FP, FP) {
+        let theta = (-n.y).acos();
+        let phi = (-n.z).atan2(n.x) + PI;
+        (phi / (2.0 * PI), theta / PI)
+    }
+    fn at(&self, time: FP) -> Point3 {
         self.center + self.center_vec * time
     }
 }
@@ -77,7 +82,8 @@ impl<M: Material> Hittable for Sphere<M> {
 
         let p = r.at(root);
         let outward_normal = (p - center) / self.radius;
-        Some(HitRecord::new(p, &self.material, root, r, outward_normal))
+        let (u, v) = self.get_sphere_uv(&outward_normal);
+        Some(HitRecord::new(p, &self.material, root, r, outward_normal).with_uvs(u, v))
     }
 
     fn bounding_box(&self) -> AABB {

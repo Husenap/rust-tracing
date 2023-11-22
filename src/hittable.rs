@@ -13,6 +13,8 @@ pub struct HitRecord<'a> {
     pub normal: Vec3,
     pub mat: &'a dyn Material,
     pub t: FP,
+    pub u: FP,
+    pub v: FP,
     pub front_face: bool,
 }
 
@@ -21,15 +23,22 @@ impl<'a> HitRecord<'a> {
         let front_face = r.direction.dot(&outward_normal) < 0.0;
         Self {
             p,
-            mat,
-            t,
-            front_face,
             normal: if front_face {
                 outward_normal
             } else {
                 -outward_normal
             },
+            mat,
+            t,
+            u: 0.0,
+            v: 0.0,
+            front_face,
         }
+    }
+    pub fn with_uvs(mut self, u: FP, v: FP) -> Self {
+        self.u = u;
+        self.v = v;
+        self
     }
 }
 

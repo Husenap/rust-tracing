@@ -2,8 +2,8 @@ use fltk::{app, prelude::*, window::Window};
 use indicatif::{ProgressBar, ProgressStyle};
 use pixels::{Pixels, SurfaceTexture};
 use rayon::prelude::*;
-use std::fs::File;
 use std::io::Write;
+use std::{fs::File, time::Instant};
 
 use crate::{
     camera::Camera,
@@ -28,6 +28,7 @@ pub fn render(camera: &Camera, world: &impl Hittable) {
             .progress_chars("█▉▊▋▌▍▎▏  "),
     );
 
+    let now = Instant::now();
     let raw_pixels: Vec<Color> = (0..width * height)
         .into_par_iter()
         .map(|screen_pos| {
@@ -48,8 +49,9 @@ pub fn render(camera: &Camera, world: &impl Hittable) {
             avg_color
         })
         .collect();
-
     bar.finish();
+
+    println!("Render time: {:.2?}", now.elapsed());
 
     let mut output = File::create("output.ppm").unwrap();
     writeln!(output, "P3").unwrap();

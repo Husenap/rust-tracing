@@ -2,6 +2,7 @@ use crate::{
     common::FP,
     hittable::HitRecord,
     ray::Ray,
+    texture::Texture,
     vec3::{Color, Vec3},
 };
 
@@ -9,15 +10,15 @@ pub trait Material: Sync {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Ray, Color)>;
 }
 
-pub struct Lambertian {
-    albedo: Color,
+pub struct Lambertian<T: Texture> {
+    albedo: T,
 }
-impl Lambertian {
-    pub fn new(albedo: Color) -> Self {
+impl<T: Texture> Lambertian<T> {
+    pub fn new(albedo: T) -> Self {
         Self { albedo }
     }
 }
-impl Material for Lambertian {
+impl<T: Texture> Material for Lambertian<T> {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Ray, Color)> {
         let scatter_direction = hit.normal + Vec3::random_unit_vector();
         Some((
@@ -30,7 +31,7 @@ impl Material for Lambertian {
                 },
             )
             .with_time(ray.time),
-            self.albedo,
+            self.albedo.value(hit.u, hit.v, &hit.p),
         ))
     }
 }
