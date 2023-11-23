@@ -1,6 +1,7 @@
 use image::{DynamicImage, GenericImageView};
 
 use crate::{
+    color::rgb_to_color,
     common::FP,
     perlin::Perlin,
     vec3::{Color, Point3},
@@ -85,7 +86,7 @@ impl Texture for ImageTexture {
         let j = (v * (self.image.height() - 1) as FP) as u32;
         let [r, g, b, _] = self.image.get_pixel(i, j).0;
 
-        Color::new((r as FP) / 255.0, (g as FP) / 255.0, (b as FP) / 255.0)
+        rgb_to_color(r, g, b)
     }
 }
 
