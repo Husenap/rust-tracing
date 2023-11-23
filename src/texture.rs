@@ -3,11 +3,11 @@ use image::{DynamicImage, GenericImageView};
 use crate::{
     common::FP,
     perlin::Perlin,
-    vec3::{Color, Vec3},
+    vec3::{Color, Point3},
 };
 
 pub trait Texture: Sync + Clone {
-    fn value(&self, u: FP, v: FP, p: &Vec3) -> Color;
+    fn value(&self, u: FP, v: FP, p: &Point3) -> Color;
 }
 
 #[derive(Clone)]
@@ -27,7 +27,7 @@ impl From<Color> for SolidColor {
     }
 }
 impl Texture for SolidColor {
-    fn value(&self, _u: FP, _v: FP, _p: &Vec3) -> Color {
+    fn value(&self, _u: FP, _v: FP, _p: &Point3) -> Color {
         self.color
     }
 }
@@ -53,7 +53,7 @@ impl CheckerTexture<SolidColor, SolidColor> {
     }
 }
 impl<E: Texture, O: Texture> Texture for CheckerTexture<E, O> {
-    fn value(&self, u: FP, v: FP, p: &Vec3) -> Color {
+    fn value(&self, u: FP, v: FP, p: &Point3) -> Color {
         let x = (self.inv_scale * p.x).floor() as i32;
         let y = (self.inv_scale * p.y).floor() as i32;
         let z = (self.inv_scale * p.z).floor() as i32;
@@ -77,7 +77,7 @@ impl ImageTexture {
     }
 }
 impl Texture for ImageTexture {
-    fn value(&self, u: FP, v: FP, _p: &Vec3) -> Color {
+    fn value(&self, u: FP, v: FP, _p: &Point3) -> Color {
         let u = u.clamp(0.0, 1.0);
         let v = 1.0 - v.clamp(0.0, 1.0);
 
@@ -103,7 +103,7 @@ impl NoiseTexture {
     }
 }
 impl Texture for NoiseTexture {
-    fn value(&self, _u: FP, _v: FP, p: &Vec3) -> Color {
+    fn value(&self, _u: FP, _v: FP, p: &Point3) -> Color {
         Color::splat((self.scale * p.z + 10.0 * self.noise.turbulence(&p, 7)).sin() * 0.5 + 0.5)
     }
 }
