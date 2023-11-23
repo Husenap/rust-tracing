@@ -3,11 +3,14 @@ use crate::{
     hittable::HitRecord,
     ray::Ray,
     texture::Texture,
-    vec3::{Color, Vec3},
+    vec3::{Color, Point3, Vec3},
 };
 
 pub trait Material: Sync {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Ray, Color)>;
+    fn emitted(&self, _u: FP, _v: FP, _p: &Point3) -> Color {
+        Color::ZERO
+    }
 }
 
 pub struct Lambertian<T: Texture> {
@@ -94,5 +97,23 @@ impl Material for Dielectric {
 
         let scattered = Ray::new(hit.p, direction).with_time(ray.time);
         Some((scattered, attenuation))
+    }
+}
+
+pub struct DiffuseLight<T: Texture> {
+    emit: T,
+}
+impl<T: Texture> DiffuseLight<T> {
+    pub fn new(emit: T) -> Self {
+        Self { emit }
+    }
+}
+impl<T: Texture> Material for DiffuseLight<T> {
+    fn scatter(&self, _ray: &Ray, _hit: &HitRecord) -> Option<(Ray, Color)> {
+        None
+    }
+
+    fn emitted(&self, u: FP, v: FP, p: &Point3) -> Color {
+        self.emit.value(u, v, p)
     }
 }

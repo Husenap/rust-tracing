@@ -1,4 +1,5 @@
 use crate::common::{degrees_to_radians, FP};
+use crate::vec3::Color;
 use crate::{
     ray::Ray,
     vec3::{Point3, Vec3},
@@ -15,6 +16,7 @@ pub struct CameraSettings {
     pub vup: Vec3,
     pub defocus_angle: FP,
     pub focus_dist: FP,
+    pub background: Color,
 }
 impl Default for CameraSettings {
     fn default() -> Self {
@@ -29,6 +31,7 @@ impl Default for CameraSettings {
             vup: Vec3::UP,
             defocus_angle: 0.0,
             focus_dist: 10.0,
+            background: Color::ZERO,
         }
     }
 }
@@ -37,6 +40,7 @@ pub struct Camera {
     pub image_height: usize,
     pub samples_per_pixel: i32,
     pub max_depth: i32,
+    pub background: Color,
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -59,6 +63,7 @@ impl Camera {
             vup,
             defocus_angle,
             focus_dist,
+            background,
         } = settings;
 
         let image_height = (image_width as FP / aspect_ratio) as usize;
@@ -93,6 +98,7 @@ impl Camera {
             image_height,
             samples_per_pixel,
             max_depth,
+            background,
             center,
             pixel00_loc,
             pixel_delta_u,

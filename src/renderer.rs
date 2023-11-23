@@ -32,7 +32,7 @@ pub fn render(camera: &Camera, world: &impl Hittable, output_file_name: String) 
 
             for _ in 1..=spp {
                 let r = camera.get_ray(i, j);
-                let new_color = ray_color(&r, camera.max_depth, world);
+                let new_color = ray_color(&r, camera.max_depth, &camera.background, world);
                 avg_color += new_color;
             }
 
@@ -106,7 +106,7 @@ pub fn live_render(camera: &Camera, world: &impl Hittable) {
                     let j = screen_pos / width;
 
                     let r = camera.get_ray(i, j);
-                    let new_color = ray_color(&r, camera.max_depth, world);
+                    let new_color = ray_color(&r, camera.max_depth, &camera.background, world);
                     *avg_color += (new_color - *avg_color) / num_samples as FP;
                 });
             num_samples += 1;
@@ -131,19 +131,20 @@ pub fn live_render(camera: &Camera, world: &impl Hittable) {
     }
 }
 
-fn ray_color(ray: &Ray, depth: i32, world: &impl Hittable) -> Color {
+fn ray_color(ray: &Ray, depth: i32, background: &Color, world: &impl Hittable) -> Color {
     if depth <= 0 {
         return Color::ZERO;
     }
 
     if let Some(hit) = world.hit(ray, &Interval::new(0.001, FP::INFINITY)) {
-        if let Some((scattered, attenuation)) = hit.mat.scatter(ray, &hit) {
-            return attenuation * ray_color(&scattered, depth - 1, world);
-        }
-        return Color::ZERO;
-    }
+        let color_from_emission = hit.mat.emitted(hit.u, hit.v, &hit.p);
 
-    let unit_direction = ray.direction.normalize();
-    let a = 0.5 * (unit_direction.y + 1.0);
-    (1.0 - a) * Color::ONE + a * Color::new(0.5, 0.7, 1.0)
+        if let Some((scattered, attenuation)) = hit.mat.scatter(ray, &hit) {
+            color_from_emission + attenuation * ray_color(&scattered, depth - 1, background, world)
+        } else {
+            color_from_emission
+        }
+    } else {
+        *background
+    }
 }

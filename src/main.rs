@@ -10,7 +10,8 @@ use bvh::BVHNode;
 use camera::CameraSettings;
 use clap::Parser;
 use common::FP;
-use material::{Dielectric, Lambertian, Metal};
+use material::{Dielectric, DiffuseLight, Lambertian, Metal};
+use quad::Quad;
 use rand::Rng;
 use renderer::render;
 use std::time::Instant;
@@ -26,6 +27,7 @@ mod hittable;
 mod interval;
 mod material;
 mod perlin;
+mod quad;
 mod ray;
 mod renderer;
 mod sphere;
@@ -39,11 +41,11 @@ struct Args {
     #[arg(short, long)]
     live: bool,
 
-    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres)
+    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light)
     #[arg(short, long, default_value_t = 0)]
     scene: i32,
 
-    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres)
+    /// Name of the output file that the render will end up in
     #[arg(short, long, default_value = "output")]
     output: String,
 }
@@ -108,10 +110,11 @@ fn random_balls() -> (HittableList, Camera) {
         image_width: 600,
         samples_per_pixel: 128,
         max_depth: 8,
+        background: Color::new(0.7, 0.8, 1.0),
 
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
-        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_at: Point3::ZERO,
 
         defocus_angle: 0.6,
         focus_dist: 10.0,
@@ -143,10 +146,11 @@ fn two_spheres() -> (HittableList, Camera) {
         image_width: 1200,
         samples_per_pixel: 128,
         max_depth: 8,
+        background: Color::new(0.7, 0.8, 1.0),
 
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
-        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_at: Point3::ZERO,
 
         ..Default::default()
     });
@@ -170,10 +174,11 @@ fn earth() -> (HittableList, Camera) {
         image_width: 1200,
         samples_per_pixel: 128,
         max_depth: 8,
+        background: Color::new(0.7, 0.8, 1.0),
 
         vfov: 20.0,
         look_from: Point3::new(12.0, 0.0, 0.0),
-        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_at: Point3::ZERO,
 
         ..Default::default()
     });
@@ -202,10 +207,11 @@ fn two_perlin_spheres() -> (HittableList, Camera) {
         image_width: 1200,
         samples_per_pixel: 128,
         max_depth: 8,
+        background: Color::new(0.7, 0.8, 1.0),
 
         vfov: 20.0,
         look_from: Point3::new(13.0, 2.0, 3.0),
-        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_at: Point3::ZERO,
 
         ..Default::default()
     });
@@ -213,6 +219,107 @@ fn two_perlin_spheres() -> (HittableList, Camera) {
     (world, camera)
 }
 
+fn quads() -> (HittableList, Camera) {
+    let mut world = HittableList::default();
+
+    let left_red = Lambertian::new(SolidColor::new(1.0, 0.2, 0.2));
+    let back_green = Lambertian::new(SolidColor::new(0.2, 1.0, 0.2));
+    let right_blue = Lambertian::new(SolidColor::new(0.2, 0.2, 1.0));
+    let upper_orange = Lambertian::new(SolidColor::new(1.0, 0.5, 0.0));
+    let lower_teal = Lambertian::new(SolidColor::new(0.2, 0.8, 0.8));
+
+    world.add(Quad::new(
+        Point3::new(-3.0, -2.0, 5.0),
+        Vec3::BACKWARD * 4.0,
+        Vec3::UP * 4.0,
+        left_red,
+    ));
+    world.add(Quad::new(
+        Point3::new(-2.0, -2.0, 0.0),
+        Vec3::RIGHT * 4.0,
+        Vec3::UP * 4.0,
+        back_green,
+    ));
+    world.add(Quad::new(
+        Point3::new(3.0, -2.0, 1.0),
+        Vec3::FORWARD * 4.0,
+        Vec3::UP * 4.0,
+        right_blue,
+    ));
+    world.add(Quad::new(
+        Point3::new(-2.0, 3.0, 1.0),
+        Vec3::RIGHT * 4.0,
+        Vec3::FORWARD * 4.0,
+        upper_orange,
+    ));
+    world.add(Quad::new(
+        Point3::new(-2.0, -3.0, 5.0),
+        Vec3::RIGHT * 4.0,
+        Vec3::BACKWARD * 4.0,
+        lower_teal,
+    ));
+
+    let camera = Camera::new(CameraSettings {
+        aspect_ratio: 1.0,
+        image_width: 1200,
+        samples_per_pixel: 128,
+        max_depth: 8,
+        background: Color::new(0.7, 0.8, 1.0),
+
+        vfov: 80.0,
+        look_from: Point3::FORWARD * 9.0,
+        look_at: Point3::ZERO,
+
+        ..Default::default()
+    });
+
+    (world, camera)
+}
+
+fn simple_light() -> (HittableList, Camera) {
+    let mut world = HittableList::default();
+
+    let perlin_texture = NoiseTexture::new(4.0);
+    world.add(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        Lambertian::new(perlin_texture.clone()),
+    ));
+    world.add(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0),
+        2.0,
+        Lambertian::new(perlin_texture),
+    ));
+
+    let diffuse_light = SolidColor::new(4.0, 4.0, 4.0);
+    world.add(Quad::new(
+        Point3::new(3.0, 1.0, -2.0),
+        Vec3::RIGHT * 2.0,
+        Vec3::UP * 2.0,
+        DiffuseLight::new(diffuse_light.clone()),
+    ));
+    world.add(Sphere::new(
+        Point3::new(0.0, 7.0, 0.0),
+        2.0,
+        DiffuseLight::new(diffuse_light),
+    ));
+
+    let camera = Camera::new(CameraSettings {
+        aspect_ratio: 16.0 / 9.0,
+        image_width: 600,
+        samples_per_pixel: 1024,
+        max_depth: 8,
+        background: Color::ZERO,
+
+        vfov: 20.0,
+        look_from: Point3::new(26.0, 3.0, 6.0),
+        look_at: Point3::UP * 2.0,
+
+        ..Default::default()
+    });
+
+    (world, camera)
+}
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     println!("Args: {:?}", args);
@@ -222,6 +329,8 @@ fn main() -> std::io::Result<()> {
         1 => two_spheres(),
         2 => earth(),
         3 => two_perlin_spheres(),
+        4 => quads(),
+        5 => simple_light(),
         _ => random_balls(),
     };
 

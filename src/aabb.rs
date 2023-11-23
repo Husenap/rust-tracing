@@ -26,6 +26,26 @@ impl AABB {
         )
     }
 
+    pub fn pad(mut self) -> Self {
+        let delta = 0.0001;
+        self.x = if self.x.size() < delta {
+            self.x.expand(delta)
+        } else {
+            self.x
+        };
+        self.y = if self.y.size() < delta {
+            self.y.expand(delta)
+        } else {
+            self.y
+        };
+        self.z = if self.z.size() < delta {
+            self.z.expand(delta)
+        } else {
+            self.z
+        };
+        self
+    }
+
     pub fn axis(&self, n: usize) -> &Interval {
         assert!(n <= 2);
         match n {
