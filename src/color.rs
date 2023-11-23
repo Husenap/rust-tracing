@@ -13,9 +13,3 @@ pub fn color_to_rgb(rgb: &Color) -> [u8; 3] {
         (256.0 * intensity.clamp(linear_to_gamma(rgb.z))) as u8,
     ]
 }
-
-pub fn write_color(output: &mut impl std::io::Write, pixel_color: &Color) {
-    let [r, g, b] = color_to_rgb(&pixel_color);
-
-    writeln!(output, "{} {} {}", r, g, b,).expect("Should write to file");
-}

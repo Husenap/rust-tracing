@@ -1,18 +1,12 @@
 use crate::{
-    camera::Camera,
-    color::{color_to_rgb, write_color},
-    common::FP,
-    hittable::Hittable,
-    interval::Interval,
-    ray::Ray,
-    vec3::Color,
+    camera::Camera, color::color_to_rgb, common::FP, hittable::Hittable, interval::Interval,
+    ray::Ray, vec3::Color,
 };
 use fltk::{app, prelude::*, window::Window};
 use image::{codecs::png::CompressionType, ImageEncoder};
 use indicatif::{ProgressBar, ProgressStyle};
 use pixels::{Pixels, SurfaceTexture};
 use rayon::prelude::*;
-use std::io::Write;
 use std::{fs::File, time::Instant};
 
 pub fn render(camera: &Camera, world: &impl Hittable) {

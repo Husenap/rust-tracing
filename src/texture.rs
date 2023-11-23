@@ -26,7 +26,7 @@ impl From<Color> for SolidColor {
     }
 }
 impl Texture for SolidColor {
-    fn value(&self, u: FP, v: FP, p: &Vec3) -> Color {
+    fn value(&self, _u: FP, _v: FP, _p: &Vec3) -> Color {
         self.color
     }
 }
@@ -48,11 +48,7 @@ impl<E: Texture, O: Texture> CheckerTexture<E, O> {
 }
 impl CheckerTexture<SolidColor, SolidColor> {
     pub fn new_from_colors(scale: FP, even: Color, odd: Color) -> Self {
-        Self {
-            inv_scale: 1.0 / scale,
-            even: SolidColor::from(even),
-            odd: SolidColor::from(odd),
-        }
+        Self::new(scale, SolidColor::from(even), SolidColor::from(odd))
     }
 }
 impl<E: Texture, O: Texture> Texture for CheckerTexture<E, O> {
@@ -80,7 +76,7 @@ impl ImageTexture {
     }
 }
 impl Texture for ImageTexture {
-    fn value(&self, u: FP, v: FP, p: &Vec3) -> Color {
+    fn value(&self, u: FP, v: FP, _p: &Vec3) -> Color {
         let u = u.clamp(0.0, 1.0);
         let v = 1.0 - v.clamp(0.0, 1.0);
 
