@@ -14,6 +14,7 @@ use material::{Dielectric, Lambertian, Metal};
 use rand::Rng;
 use renderer::render;
 use std::time::Instant;
+use texture::NoiseTexture;
 use vec3::{Color, Vec3};
 
 mod aabb;
@@ -24,6 +25,7 @@ mod common;
 mod hittable;
 mod interval;
 mod material;
+mod perlin;
 mod ray;
 mod renderer;
 mod sphere;
@@ -175,6 +177,38 @@ fn earth() -> (HittableList, Camera) {
     (world, camera)
 }
 
+fn two_perlin_spheres() -> (HittableList, Camera) {
+    let mut world = HittableList::default();
+
+    let perlin_texture = NoiseTexture::new(4.0);
+
+    world.add(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        Lambertian::new(perlin_texture.clone()),
+    ));
+    world.add(Sphere::new(
+        Point3::new(0.0, 2.0, 0.0),
+        2.0,
+        Lambertian::new(perlin_texture),
+    ));
+
+    let camera = Camera::new(CameraSettings {
+        aspect_ratio: 16.0 / 9.0,
+        image_width: 1200,
+        samples_per_pixel: 128,
+        max_depth: 8,
+
+        vfov: 20.0,
+        look_from: Point3::new(13.0, 2.0, 3.0),
+        look_at: Point3::new(0.0, 0.0, 0.0),
+
+        ..Default::default()
+    });
+
+    (world, camera)
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     println!("Args: {:?}", args);
@@ -183,6 +217,7 @@ fn main() -> std::io::Result<()> {
         0 => random_balls(),
         1 => two_spheres(),
         2 => earth(),
+        3 => two_perlin_spheres(),
         _ => random_balls(),
     };
 

@@ -2,6 +2,7 @@ use image::{DynamicImage, GenericImageView};
 
 use crate::{
     common::FP,
+    perlin::Perlin,
     vec3::{Color, Vec3},
 };
 
@@ -85,5 +86,24 @@ impl Texture for ImageTexture {
         let [r, g, b, _] = self.image.get_pixel(i, j).0;
 
         Color::new((r as FP) / 255.0, (g as FP) / 255.0, (b as FP) / 255.0)
+    }
+}
+
+#[derive(Clone)]
+pub struct NoiseTexture {
+    noise: Perlin,
+    scale: FP,
+}
+impl NoiseTexture {
+    pub fn new(scale: FP) -> Self {
+        Self {
+            noise: Perlin::new(),
+            scale,
+        }
+    }
+}
+impl Texture for NoiseTexture {
+    fn value(&self, _u: FP, _v: FP, p: &Vec3) -> Color {
+        Color::splat((self.scale * p.z + 10.0 * self.noise.turbulence(&p, 7)).sin() * 0.5 + 0.5)
     }
 }
