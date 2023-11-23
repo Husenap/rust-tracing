@@ -42,6 +42,10 @@ struct Args {
     /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres)
     #[arg(short, long, default_value_t = 0)]
     scene: i32,
+
+    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres)
+    #[arg(short, long, default_value = "output")]
+    output: String,
 }
 
 fn random_balls() -> (HittableList, Camera) {
@@ -228,7 +232,7 @@ fn main() -> std::io::Result<()> {
     if args.live {
         live_render(&camera, &bvh);
     } else {
-        render(&camera, &bvh);
+        render(&camera, &bvh, args.output);
     }
 
     Ok(())

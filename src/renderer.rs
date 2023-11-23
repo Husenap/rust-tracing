@@ -9,7 +9,7 @@ use pixels::{Pixels, SurfaceTexture};
 use rayon::prelude::*;
 use std::{fs::File, time::Instant};
 
-pub fn render(camera: &Camera, world: &impl Hittable) {
+pub fn render(camera: &Camera, world: &impl Hittable, output_file_name: String) {
     let height = camera.image_height;
     let width = camera.image_width;
     let spp = camera.samples_per_pixel;
@@ -52,7 +52,7 @@ pub fn render(camera: &Camera, world: &impl Hittable) {
             .into_iter()
             .flat_map(|c| color_to_rgb(&(c / spp as FP)).to_vec())
             .collect::<Vec<u8>>();
-        let output = File::create("output.png").unwrap();
+        let output = File::create(format!("{}.png", output_file_name)).unwrap();
         let encoder = image::codecs::png::PngEncoder::new_with_quality(
             output,
             CompressionType::Default,
