@@ -49,6 +49,12 @@ impl<M: Material> Hittable for Quad<M> {
     ) -> Option<crate::hittable::HitRecord> {
         let denom = self.normal.dot(&r.direction);
 
+        /*
+         * back-face culling for quads?
+        if denom > 1e-8 {
+            return None;
+        }
+        */
         if denom.abs() < 1e-8 {
             return None;
         }

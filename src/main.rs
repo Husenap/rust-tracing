@@ -41,7 +41,7 @@ struct Args {
     #[arg(short, long)]
     live: bool,
 
-    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light)
+    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light, 6:cornell box)
     #[arg(short, long, default_value_t = 0)]
     scene: i32,
 
@@ -320,6 +320,69 @@ fn simple_light() -> (HittableList, Camera) {
 
     (world, camera)
 }
+
+fn cornell_box() -> (HittableList, Camera) {
+    let mut world = HittableList::default();
+
+    let red = SolidColor::new(0.65, 0.05, 0.05);
+    let white = SolidColor::new(0.73, 0.73, 0.73);
+    let green = SolidColor::new(0.12, 0.45, 0.15);
+    let light = SolidColor::new(15.0, 15.0, 15.0);
+
+    world.add(Quad::new(
+        Point3::new(555.0, 0.0, 555.0),
+        Vec3::UP * 555.0,
+        Vec3::BACKWARD * 555.0,
+        Lambertian::new(green),
+    ));
+    world.add(Quad::new(
+        Point3::ZERO,
+        Vec3::UP * 555.0,
+        Vec3::FORWARD * 555.0,
+        Lambertian::new(red),
+    ));
+    world.add(Quad::new(
+        Point3::new(343.0, 554.0, 332.0),
+        Vec3::LEFT * 130.0,
+        Vec3::BACKWARD * 105.0,
+        DiffuseLight::new(light),
+    ));
+    world.add(Quad::new(
+        Point3::FORWARD * 555.0,
+        Vec3::RIGHT * 555.0,
+        Vec3::BACKWARD * 555.0,
+        Lambertian::new(white.clone()),
+    ));
+    world.add(Quad::new(
+        Point3::ONE * 555.0,
+        Vec3::LEFT * 555.0,
+        Vec3::BACKWARD * 555.0,
+        Lambertian::new(white.clone()),
+    ));
+    world.add(Quad::new(
+        Point3::new(555.0, 0.0, 555.0),
+        Vec3::LEFT * 555.0,
+        Vec3::UP * 555.0,
+        Lambertian::new(white),
+    ));
+
+    let camera = Camera::new(CameraSettings {
+        aspect_ratio: 1.0,
+        image_width: 600,
+        samples_per_pixel: 1024,
+        max_depth: 8,
+        background: Color::ONE * 0.01,
+
+        vfov: 40.0,
+        look_from: Point3::new(278.0, 278.0, -800.0),
+        look_at: Point3::new(278.0, 278.0, 0.0),
+
+        ..Default::default()
+    });
+
+    (world, camera)
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     println!("Args: {:?}", args);
@@ -331,6 +394,7 @@ fn main() -> std::io::Result<()> {
         3 => two_perlin_spheres(),
         4 => quads(),
         5 => simple_light(),
+        6 => cornell_box(),
         _ => random_balls(),
     };
 

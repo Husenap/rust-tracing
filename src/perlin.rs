@@ -72,7 +72,7 @@ impl Perlin {
     }
 
     fn permute(p: &mut Vec<i32>, n: i32) {
-        for i in (1..POINT_COUNT).rev() {
+        for i in (1..n).rev() {
             let target = rand::thread_rng().gen_range(0..=i);
             p.swap(i as usize, target as usize);
         }
