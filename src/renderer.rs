@@ -74,7 +74,7 @@ pub fn render(camera: Arc<Camera>, world: Arc<dyn Hittable>, output_file_name: S
     }
 }
 
-pub fn live_render(camera: Arc<Camera>, world: Arc<impl Hittable>) {
+pub fn live_render(camera: Arc<Camera>, world: Arc<dyn Hittable>) {
     let height = camera.image_height;
     let width = camera.image_width;
     let spp = camera.samples_per_pixel;

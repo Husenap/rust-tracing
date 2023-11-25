@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use crate::common::FP;
 
 #[derive(Default, Clone, Copy)]
@@ -35,5 +37,24 @@ impl Interval {
     }
     pub fn clamp(&self, x: FP) -> FP {
         x.clamp(self.min, self.max)
+    }
+}
+
+impl Add<FP> for Interval {
+    type Output = Self;
+
+    fn add(self, rhs: FP) -> Self::Output {
+        Self {
+            min: self.min + rhs,
+            max: self.max + rhs,
+        }
+    }
+}
+
+impl Add<Interval> for FP {
+    type Output = Interval;
+
+    fn add(self, rhs: Interval) -> Self::Output {
+        rhs + self
     }
 }

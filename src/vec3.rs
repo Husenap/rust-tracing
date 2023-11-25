@@ -1,7 +1,9 @@
 use crate::common::FP;
 use core::fmt;
 use rand::Rng;
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vec3 {
@@ -262,9 +264,20 @@ impl Index<usize> for Vec3 {
     fn index(&self, index: usize) -> &Self::Output {
         assert!(index <= 2);
         match index {
+            0 => &self.x,
             1 => &self.y,
-            2 => &self.z,
-            _ => &self.x,
+            _ => &self.z,
+        }
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        assert!(index <= 2);
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            _ => &mut self.z,
         }
     }
 }
