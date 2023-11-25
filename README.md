@@ -23,6 +23,7 @@ cargo run --release -- -h
 ![](screenshots/checker.png)
 ![](screenshots/earth.png)
 ![](screenshots/perlin.png)
+![](screenshots/cornell_box.png)
 
 https://github.com/Husenap/rust-tracing/assets/6496177/c71fdf9a-9200-48f7-abb1-3478b8bf8d71
 
