@@ -9,6 +9,15 @@ pub struct Interval {
 }
 
 impl Interval {
+    pub const EMPTY: Self = Self {
+        min: FP::INFINITY,
+        max: FP::NEG_INFINITY,
+    };
+    pub const UNIVERSE: Self = Self {
+        min: FP::NEG_INFINITY,
+        max: FP::INFINITY,
+    };
+
     pub fn new(min: FP, max: FP) -> Self {
         Self { min, max }
     }

@@ -10,6 +10,7 @@ use bvh::BVHNode;
 use camera::CameraSettings;
 use clap::Parser;
 use common::FP;
+use constant_medium::ConstantMedium;
 use hittable::{RotateY, Translate};
 use material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use quad::Quad;
@@ -24,6 +25,7 @@ mod bvh;
 mod camera;
 mod color;
 mod common;
+mod constant_medium;
 mod hittable;
 mod interval;
 mod material;
@@ -42,7 +44,7 @@ struct Args {
     #[arg(short, long)]
     live: bool,
 
-    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light, 6:cornell box)
+    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light, 6:cornell box, 7:cornell smoke)
     #[arg(short, long, default_value_t = 0)]
     scene: i32,
 
@@ -418,6 +420,91 @@ fn cornell_box() -> (HittableList, Camera) {
     (world, camera)
 }
 
+fn cornell_smoke() -> (HittableList, Camera) {
+    let mut world = HittableList::default();
+
+    let red = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.65, 0.05, 0.05))));
+    let white: Arc<dyn Material> =
+        Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.73, 0.73, 0.73))));
+    let green = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.12, 0.45, 0.15))));
+    let light = Arc::new(DiffuseLight::new(Arc::new(SolidColor::new(7.0, 7.0, 7.0))));
+
+    world.add(Arc::new(Quad::new(
+        Point3::new(555.0, 0.0, 555.0),
+        Vec3::UP * 555.0,
+        Vec3::BACKWARD * 555.0,
+        green,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::ZERO,
+        Vec3::UP * 555.0,
+        Vec3::FORWARD * 555.0,
+        red,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(113.0, 554.0, 127.0),
+        Vec3::RIGHT * 330.0,
+        Vec3::FORWARD * 305.0,
+        light,
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::FORWARD * 555.0,
+        Vec3::RIGHT * 555.0,
+        Vec3::BACKWARD * 555.0,
+        Arc::clone(&white),
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::ONE * 555.0,
+        Vec3::LEFT * 555.0,
+        Vec3::BACKWARD * 555.0,
+        Arc::clone(&white),
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new(555.0, 0.0, 555.0),
+        Vec3::LEFT * 555.0,
+        Vec3::UP * 555.0,
+        Arc::clone(&white),
+    )));
+
+    let box1 = Quad::cube(
+        &Point3::ZERO,
+        &Point3::new(165.0, 330.0, 165.0),
+        Arc::clone(&white),
+    );
+    let box1 = Arc::new(RotateY::new(box1, 15.0));
+    let box1 = Arc::new(Translate::new(box1, Vec3::new(265.0, 0.0, 295.0)));
+    world.add(Arc::new(ConstantMedium::new_from_color(
+        box1,
+        0.01,
+        Color::ZERO,
+    )));
+
+    let box2 = Quad::cube(&Point3::ZERO, &Point3::splat(165.0), white);
+    let box2 = Arc::new(RotateY::new(box2, -18.0));
+    let box2 = Arc::new(Translate::new(box2, Vec3::new(130.0, 0.0, 65.0)));
+    world.add(Arc::new(ConstantMedium::new_from_color(
+        box2,
+        0.01,
+        Color::ONE,
+    )));
+
+    let camera = Camera::new(CameraSettings {
+        aspect_ratio: 1.0,
+        image_width: 600,
+        samples_per_pixel: 4096,
+        max_depth: 8,
+        background: Color::ZERO,
+
+        vfov: 40.0,
+        look_from: Point3::new(278.0, 278.0, -800.0),
+        look_at: Point3::new(278.0, 278.0, 0.0),
+
+        ..Default::default()
+    });
+
+    (world, camera)
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     println!("Args: {:?}", args);
@@ -430,6 +517,7 @@ fn main() -> std::io::Result<()> {
         4 => quads(),
         5 => simple_light(),
         6 => cornell_box(),
+        7 => cornell_smoke(),
         _ => random_balls(),
     };
 
