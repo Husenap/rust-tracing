@@ -1,24 +1,26 @@
+use std::sync::Arc;
+
 use crate::{
     aabb::AABB,
     common::FP,
-    hittable::{HitRecord, Hittable},
+    hittable::{HitRecord, Hittable, HittableList},
     material::Material,
     vec3::{Point3, Vec3},
 };
 
-pub struct Quad<M: Material> {
+pub struct Quad {
     q: Point3,
     u: Vec3,
     v: Vec3,
     w: Vec3,
-    mat: M,
+    mat: Arc<dyn Material>,
     bbox: AABB,
     d: FP,
     normal: Vec3,
 }
 
-impl<M: Material> Quad<M> {
-    pub fn new(q: Vec3, u: Vec3, v: Vec3, mat: M) -> Self {
+impl Quad {
+    pub fn new(q: Vec3, u: Vec3, v: Vec3, mat: Arc<dyn Material>) -> Self {
         let n = u.cross(&v);
         let normal = n.normalize();
         let d = normal.dot(&q);
@@ -39,9 +41,59 @@ impl<M: Material> Quad<M> {
     fn create_bounding_box(q: &Vec3, u: &Vec3, v: &Vec3) -> AABB {
         AABB::new_from_points(*q, *q + *u + *v).pad()
     }
+
+    pub fn cube(a: &Point3, b: &Point3, mat: Arc<dyn Material>) -> Arc<HittableList> {
+        let mut sides = HittableList::default();
+
+        let min = Point3::new(a.x.min(b.x), a.y.min(b.y), a.z.min(b.z));
+        let max = Point3::new(a.x.max(b.x), a.y.max(b.y), a.z.max(b.z));
+
+        let dx = Vec3::new(max.x - min.x, 0.0, 0.0);
+        let dy = Vec3::new(0.0, max.y - min.y, 0.0);
+        let dz = Vec3::new(0.0, 0.0, max.z - min.z);
+
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x, min.y, max.z),
+            dx,
+            dy,
+            Arc::clone(&mat),
+        )));
+        sides.add(Arc::new(Quad::new(
+            Point3::new(max.x, min.y, max.z),
+            -dz,
+            dy,
+            Arc::clone(&mat),
+        )));
+        sides.add(Arc::new(Quad::new(
+            Point3::new(max.x, min.y, min.z),
+            -dx,
+            dy,
+            Arc::clone(&mat),
+        )));
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x, min.y, min.z),
+            dz,
+            dy,
+            Arc::clone(&mat),
+        )));
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x, max.y, max.z),
+            dx,
+            -dz,
+            Arc::clone(&mat),
+        )));
+        sides.add(Arc::new(Quad::new(
+            Point3::new(min.x, min.y, min.z),
+            dx,
+            dz,
+            mat,
+        )));
+
+        Arc::new(sides)
+    }
 }
 
-impl<M: Material> Hittable for Quad<M> {
+impl Hittable for Quad {
     fn hit(
         &self,
         r: &crate::ray::Ray,
@@ -74,7 +126,10 @@ impl<M: Material> Hittable for Quad<M> {
             return None;
         }
 
-        Some(HitRecord::new(intersection, &self.mat, t, r, self.normal).with_uvs(alpha, beta))
+        Some(
+            HitRecord::new(intersection, self.mat.as_ref(), t, r, self.normal)
+                .with_uvs(alpha, beta),
+        )
     }
 
     fn bounding_box(&self) -> crate::aabb::AABB {

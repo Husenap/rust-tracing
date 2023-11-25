@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     common::FP,
     hittable::HitRecord,
@@ -6,22 +8,22 @@ use crate::{
     vec3::{Color, Point3, Vec3},
 };
 
-pub trait Material: Sync {
+pub trait Material: Sync + Send {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Ray, Color)>;
     fn emitted(&self, _u: FP, _v: FP, _p: &Point3) -> Color {
         Color::ZERO
     }
 }
 
-pub struct Lambertian<T: Texture> {
-    albedo: T,
+pub struct Lambertian {
+    albedo: Arc<dyn Texture>,
 }
-impl<T: Texture> Lambertian<T> {
-    pub fn new(albedo: T) -> Self {
+impl Lambertian {
+    pub fn new(albedo: Arc<dyn Texture>) -> Self {
         Self { albedo }
     }
 }
-impl<T: Texture> Material for Lambertian<T> {
+impl Material for Lambertian {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<(Ray, Color)> {
         let scatter_direction = hit.normal + Vec3::random_unit_vector();
         Some((
@@ -100,15 +102,15 @@ impl Material for Dielectric {
     }
 }
 
-pub struct DiffuseLight<T: Texture> {
-    emit: T,
+pub struct DiffuseLight {
+    emit: Arc<dyn Texture>,
 }
-impl<T: Texture> DiffuseLight<T> {
-    pub fn new(emit: T) -> Self {
+impl DiffuseLight {
+    pub fn new(emit: Arc<dyn Texture>) -> Self {
         Self { emit }
     }
 }
-impl<T: Texture> Material for DiffuseLight<T> {
+impl Material for DiffuseLight {
     fn scatter(&self, _ray: &Ray, _hit: &HitRecord) -> Option<(Ray, Color)> {
         None
     }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     aabb::AABB,
     common::{FP, PI},
@@ -8,17 +10,17 @@ use crate::{
     vec3::{Point3, Vec3},
 };
 
-pub struct Sphere<M: Material> {
+pub struct Sphere {
     center: Point3,
     radius: FP,
-    material: M,
+    material: Arc<dyn Material>,
     center_vec: Vec3,
     is_moving: bool,
     bbox: AABB,
 }
 
-impl<M: Material> Sphere<M> {
-    pub fn new(center: Point3, radius: FP, material: M) -> Self {
+impl Sphere {
+    pub fn new(center: Point3, radius: FP, material: Arc<dyn Material>) -> Self {
         let rvec = Vec3::splat(radius);
         Self {
             center,
@@ -53,7 +55,7 @@ impl<M: Material> Sphere<M> {
     }
 }
 
-impl<M: Material> Hittable for Sphere<M> {
+impl Hittable for Sphere {
     fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         let center = if self.is_moving {
             self.at(r.time)
@@ -83,7 +85,7 @@ impl<M: Material> Hittable for Sphere<M> {
         let p = r.at(root);
         let outward_normal = (p - center) / self.radius;
         let (u, v) = self.get_sphere_uv(&outward_normal);
-        Some(HitRecord::new(p, &self.material, root, r, outward_normal).with_uvs(u, v))
+        Some(HitRecord::new(p, self.material.as_ref(), root, r, outward_normal).with_uvs(u, v))
     }
 
     fn bounding_box(&self) -> AABB {

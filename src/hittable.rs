@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     aabb::AABB,
     common::FP,
@@ -7,7 +9,6 @@ use crate::{
     vec3::{Point3, Vec3},
 };
 
-#[derive(Clone)]
 pub struct HitRecord<'a> {
     pub p: Point3,
     pub normal: Vec3,
@@ -42,20 +43,20 @@ impl<'a> HitRecord<'a> {
     }
 }
 
-pub trait Hittable: Sync {
+pub trait Hittable: Sync + Send {
     fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord>;
     fn bounding_box(&self) -> AABB;
 }
 
 #[derive(Default)]
 pub struct HittableList {
-    pub objects: Vec<Box<dyn Hittable>>,
+    pub objects: Vec<Arc<dyn Hittable>>,
     bbox: AABB,
 }
 impl HittableList {
-    pub fn add(&mut self, object: impl Hittable + 'static) {
+    pub fn add(&mut self, object: Arc<dyn Hittable>) {
         self.bbox = AABB::new_from_aabbs(self.bbox, object.bounding_box());
-        self.objects.push(Box::new(object));
+        self.objects.push(Arc::clone(&object));
     }
 }
 impl Hittable for HittableList {

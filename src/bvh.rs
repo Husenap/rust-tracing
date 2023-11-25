@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, sync::Arc};
 
 use rand::Rng;
 
@@ -9,26 +9,26 @@ use crate::{
     ray::Ray,
 };
 
-pub struct BVHNode<'a> {
-    root: (Node<'a>, AABB),
+pub struct BVHNode {
+    root: (Node, AABB),
 }
 
-enum Node<'a> {
-    Branch(Box<(Node<'a>, AABB)>, Box<(Node<'a>, AABB)>),
-    Leaf(&'a Box<dyn Hittable>),
+enum Node {
+    Branch(Box<(Node, AABB)>, Box<(Node, AABB)>),
+    Leaf(Arc<dyn Hittable>),
 }
 
-impl<'a> BVHNode<'a> {
-    pub fn new(list: &'a mut HittableList) -> Self {
+impl BVHNode {
+    pub fn new(list: &mut HittableList) -> Self {
         Self::new_from_objects(&mut list.objects)
     }
-    pub fn new_from_objects(objects: &'a mut [Box<dyn Hittable>]) -> Self {
+    pub fn new_from_objects(objects: &mut [Arc<dyn Hittable>]) -> Self {
         Self {
             root: Self::node_from_list(objects),
         }
     }
 
-    fn node_from_list(objects: &'a mut [Box<dyn Hittable>]) -> (Node<'a>, AABB) {
+    fn node_from_list(objects: &mut [Arc<dyn Hittable>]) -> (Node, AABB) {
         let axis: usize = rand::thread_rng().gen_range(0..=2);
 
         let comparator = match axis {
@@ -41,7 +41,7 @@ impl<'a> BVHNode<'a> {
 
         if object_span == 1 {
             let obj = &objects[0];
-            (Node::Leaf(obj), obj.bounding_box())
+            (Node::Leaf(Arc::clone(&obj)), obj.bounding_box())
         } else if object_span == 2 {
             let mut left = &objects[0];
             let mut right = &objects[1];
@@ -50,8 +50,8 @@ impl<'a> BVHNode<'a> {
             }
             (
                 Node::Branch(
-                    Box::new((Node::Leaf(left), left.bounding_box())),
-                    Box::new((Node::Leaf(right), right.bounding_box())),
+                    Box::new((Node::Leaf(Arc::clone(left)), left.bounding_box())),
+                    Box::new((Node::Leaf(Arc::clone(right)), right.bounding_box())),
                 ),
                 AABB::new_from_aabbs(left.bounding_box(), right.bounding_box()),
             )
@@ -65,29 +65,29 @@ impl<'a> BVHNode<'a> {
         }
     }
 
-    fn box_compare(a: &Box<dyn Hittable>, b: &Box<dyn Hittable>, axis: usize) -> Ordering {
+    fn box_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>, axis: usize) -> Ordering {
         if a.bounding_box().axis(axis).min < b.bounding_box().axis(axis).min {
             Ordering::Less
         } else {
             Ordering::Greater
         }
     }
-    fn box_x_compare(a: &Box<dyn Hittable>, b: &Box<dyn Hittable>) -> Ordering {
+    fn box_x_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> Ordering {
         Self::box_compare(a, b, 0)
     }
-    fn box_y_compare(a: &Box<dyn Hittable>, b: &Box<dyn Hittable>) -> Ordering {
+    fn box_y_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> Ordering {
         Self::box_compare(a, b, 1)
     }
-    fn box_z_compare(a: &Box<dyn Hittable>, b: &Box<dyn Hittable>) -> Ordering {
+    fn box_z_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> Ordering {
         Self::box_compare(a, b, 2)
     }
 }
 
-trait NodeHit<'a> {
+trait NodeHit {
     fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord>;
 }
 
-impl<'a> NodeHit<'a> for (Node<'a>, AABB) {
+impl NodeHit for (Node, AABB) {
     fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         if !self.1.hit(r, &ray_t) {
             return None;
@@ -112,7 +112,7 @@ impl<'a> NodeHit<'a> for (Node<'a>, AABB) {
     }
 }
 
-impl<'a> Hittable for BVHNode<'a> {
+impl Hittable for BVHNode {
     fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         self.root.hit(r, &ray_t)
     }

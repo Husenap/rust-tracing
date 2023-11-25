@@ -10,12 +10,12 @@ use bvh::BVHNode;
 use camera::CameraSettings;
 use clap::Parser;
 use common::FP;
-use material::{Dielectric, DiffuseLight, Lambertian, Metal};
+use material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use quad::Quad;
 use rand::Rng;
 use renderer::render;
-use std::time::Instant;
-use texture::NoiseTexture;
+use std::{sync::Arc, time::Instant};
+use texture::{NoiseTexture, Texture};
 use vec3::{Color, Vec3};
 
 mod aabb;
@@ -53,8 +53,14 @@ struct Args {
 fn random_balls() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let ground_material = Lambertian::new(SolidColor::from(Color::splat(0.5)));
-    world.add(Sphere::new(Point3::DOWN * 1000.0, 1000.0, ground_material));
+    let ground_material = Arc::new(Lambertian::new(Arc::new(SolidColor::from(Color::splat(
+        0.5,
+    )))));
+    world.add(Arc::new(Sphere::new(
+        Point3::DOWN * 1000.0,
+        1000.0,
+        ground_material,
+    )));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -68,42 +74,46 @@ fn random_balls() -> (HittableList, Camera) {
 
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
-                    let color = SolidColor::from(Color::random() * Color::random());
-                    world.add(
-                        Sphere::new(center, 0.2, Lambertian::new(color))
+                    let color = Arc::new(SolidColor::from(Color::random() * Color::random()));
+                    world.add(Arc::new(
+                        Sphere::new(center, 0.2, Arc::new(Lambertian::new(color)))
                             .with_target(center + Vec3::UP * rand::random::<FP>() * 0.5),
-                    );
+                    ));
                 } else if choose_mat < 0.95 {
-                    world.add(Sphere::new(
+                    world.add(Arc::new(Sphere::new(
                         center,
                         0.2,
-                        Metal::new(
+                        Arc::new(Metal::new(
                             Color::random_range(0.5, 1.0),
                             rand::thread_rng().gen_range(0.0..0.5),
-                        ),
-                    ));
+                        )),
+                    )));
                 } else {
-                    world.add(Sphere::new(center, 0.2, Dielectric::new(1.5)));
+                    world.add(Arc::new(Sphere::new(
+                        center,
+                        0.2,
+                        Arc::new(Dielectric::new(1.5)),
+                    )));
                 }
             }
         }
     }
 
-    world.add(Sphere::new(
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 1.0, 0.0),
         1.0,
-        Dielectric::new(1.5),
-    ));
-    world.add(Sphere::new(
+        Arc::new(Dielectric::new(1.5)),
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3::new(-4.0, 1.0, 0.0),
         1.0,
-        Lambertian::new(SolidColor::new(0.4, 0.2, 0.1)),
-    ));
-    world.add(Sphere::new(
+        Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.4, 0.2, 0.1)))),
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3::new(4.0, 1.0, 0.0),
         1.0,
-        Metal::new(Color::new(0.7, 0.6, 0.5), 0.0),
-    ));
+        Arc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0)),
+    )));
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
@@ -127,19 +137,20 @@ fn random_balls() -> (HittableList, Camera) {
 fn two_spheres() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let checker =
-        CheckerTexture::new_from_colors(0.32, Color::new(0.2, 0.3, 0.1), Color::splat(0.9));
+    let checker: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(
+        CheckerTexture::new_from_colors(0.32, Color::new(0.2, 0.3, 0.1), Color::splat(0.9)),
+    )));
 
-    world.add(Sphere::new(
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, -10.0, 0.0),
         10.0,
-        Lambertian::new(checker.clone()),
-    ));
-    world.add(Sphere::new(
+        Arc::clone(&checker),
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 10.0, 0.0),
         10.0,
-        Lambertian::new(checker),
-    ));
+        checker,
+    )));
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
@@ -161,13 +172,15 @@ fn two_spheres() -> (HittableList, Camera) {
 fn earth() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let earth_texture = ImageTexture::new("assets/earth-large.jpg");
+    let earth_texture = Arc::new(Lambertian::new(Arc::new(ImageTexture::new(
+        "assets/earth-large.jpg",
+    ))));
 
-    world.add(Sphere::new(
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         2.0,
-        Lambertian::new(earth_texture),
-    ));
+        earth_texture,
+    )));
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
@@ -189,18 +202,19 @@ fn earth() -> (HittableList, Camera) {
 fn two_perlin_spheres() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let perlin_texture = NoiseTexture::new(4.0);
+    let perlin_texture: Arc<dyn Material> =
+        Arc::new(Lambertian::new(Arc::new(NoiseTexture::new(4.0))));
 
-    world.add(Sphere::new(
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Lambertian::new(perlin_texture.clone()),
-    ));
-    world.add(Sphere::new(
+        Arc::clone(&perlin_texture),
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 2.0, 0.0),
         2.0,
-        Lambertian::new(perlin_texture),
-    ));
+        perlin_texture,
+    )));
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
@@ -222,42 +236,42 @@ fn two_perlin_spheres() -> (HittableList, Camera) {
 fn quads() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let left_red = Lambertian::new(SolidColor::new(1.0, 0.2, 0.2));
-    let back_green = Lambertian::new(SolidColor::new(0.2, 1.0, 0.2));
-    let right_blue = Lambertian::new(SolidColor::new(0.2, 0.2, 1.0));
-    let upper_orange = Lambertian::new(SolidColor::new(1.0, 0.5, 0.0));
-    let lower_teal = Lambertian::new(SolidColor::new(0.2, 0.8, 0.8));
+    let left_red = Arc::new(Lambertian::new(Arc::new(SolidColor::new(1.0, 0.2, 0.2))));
+    let back_green = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.2, 1.0, 0.2))));
+    let right_blue = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.2, 0.2, 1.0))));
+    let upper_orange = Arc::new(Lambertian::new(Arc::new(SolidColor::new(1.0, 0.5, 0.0))));
+    let lower_teal = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.2, 0.8, 0.8))));
 
-    world.add(Quad::new(
+    world.add(Arc::new(Quad::new(
         Point3::new(-3.0, -2.0, 5.0),
         Vec3::BACKWARD * 4.0,
         Vec3::UP * 4.0,
         left_red,
-    ));
-    world.add(Quad::new(
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::new(-2.0, -2.0, 0.0),
         Vec3::RIGHT * 4.0,
         Vec3::UP * 4.0,
         back_green,
-    ));
-    world.add(Quad::new(
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::new(3.0, -2.0, 1.0),
         Vec3::FORWARD * 4.0,
         Vec3::UP * 4.0,
         right_blue,
-    ));
-    world.add(Quad::new(
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::new(-2.0, 3.0, 1.0),
         Vec3::RIGHT * 4.0,
         Vec3::FORWARD * 4.0,
         upper_orange,
-    ));
-    world.add(Quad::new(
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::new(-2.0, -3.0, 5.0),
         Vec3::RIGHT * 4.0,
         Vec3::BACKWARD * 4.0,
         lower_teal,
-    ));
+    )));
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 1.0,
@@ -279,30 +293,33 @@ fn quads() -> (HittableList, Camera) {
 fn simple_light() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let perlin_texture = NoiseTexture::new(4.0);
-    world.add(Sphere::new(
+    let perlin_texture: Arc<dyn Texture> = Arc::new(NoiseTexture::new(4.0));
+
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
-        Lambertian::new(perlin_texture.clone()),
-    ));
-    world.add(Sphere::new(
+        Arc::new(Lambertian::new(Arc::clone(&perlin_texture))),
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 2.0, 0.0),
         2.0,
-        Lambertian::new(perlin_texture),
-    ));
+        Arc::new(Lambertian::new(perlin_texture)),
+    )));
 
-    let diffuse_light = SolidColor::new(4.0, 4.0, 4.0);
-    world.add(Quad::new(
+    let diffuse_light: Arc<dyn Material> =
+        Arc::new(DiffuseLight::new(Arc::new(SolidColor::new(4.0, 4.0, 4.0))));
+
+    world.add(Arc::new(Quad::new(
         Point3::new(3.0, 1.0, -2.0),
         Vec3::RIGHT * 2.0,
         Vec3::UP * 2.0,
-        DiffuseLight::new(diffuse_light.clone()),
-    ));
-    world.add(Sphere::new(
+        Arc::clone(&diffuse_light),
+    )));
+    world.add(Arc::new(Sphere::new(
         Point3::new(0.0, 7.0, 0.0),
         2.0,
-        DiffuseLight::new(diffuse_light),
-    ));
+        diffuse_light,
+    )));
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
@@ -324,46 +341,60 @@ fn simple_light() -> (HittableList, Camera) {
 fn cornell_box() -> (HittableList, Camera) {
     let mut world = HittableList::default();
 
-    let red = SolidColor::new(0.65, 0.05, 0.05);
-    let white = SolidColor::new(0.73, 0.73, 0.73);
-    let green = SolidColor::new(0.12, 0.45, 0.15);
-    let light = SolidColor::new(15.0, 15.0, 15.0);
+    let red = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.65, 0.05, 0.05))));
+    let white: Arc<dyn Material> =
+        Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.73, 0.73, 0.73))));
+    let green = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.12, 0.45, 0.15))));
+    let light = Arc::new(DiffuseLight::new(Arc::new(SolidColor::new(
+        15.0, 15.0, 15.0,
+    ))));
 
-    world.add(Quad::new(
+    world.add(Arc::new(Quad::new(
         Point3::new(555.0, 0.0, 555.0),
         Vec3::UP * 555.0,
         Vec3::BACKWARD * 555.0,
-        Lambertian::new(green),
-    ));
-    world.add(Quad::new(
+        green,
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::ZERO,
         Vec3::UP * 555.0,
         Vec3::FORWARD * 555.0,
-        Lambertian::new(red),
-    ));
-    world.add(Quad::new(
+        red,
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::new(343.0, 554.0, 332.0),
         Vec3::LEFT * 130.0,
         Vec3::BACKWARD * 105.0,
-        DiffuseLight::new(light),
-    ));
-    world.add(Quad::new(
+        light,
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::FORWARD * 555.0,
         Vec3::RIGHT * 555.0,
         Vec3::BACKWARD * 555.0,
-        Lambertian::new(white.clone()),
-    ));
-    world.add(Quad::new(
+        Arc::clone(&white),
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::ONE * 555.0,
         Vec3::LEFT * 555.0,
         Vec3::BACKWARD * 555.0,
-        Lambertian::new(white.clone()),
-    ));
-    world.add(Quad::new(
+        Arc::clone(&white),
+    )));
+    world.add(Arc::new(Quad::new(
         Point3::new(555.0, 0.0, 555.0),
         Vec3::LEFT * 555.0,
         Vec3::UP * 555.0,
-        Lambertian::new(white),
+        Arc::clone(&white),
+    )));
+
+    world.add(Quad::cube(
+        &Point3::new(130.0, 0.0, 65.0),
+        &Point3::new(295.0, 165.0, 230.0),
+        Arc::clone(&white),
+    ));
+    world.add(Quad::cube(
+        &Point3::new(265.0, 0.0, 295.0),
+        &Point3::new(430.0, 330.0, 460.0),
+        white,
     ));
 
     let camera = Camera::new(CameraSettings {
@@ -371,7 +402,7 @@ fn cornell_box() -> (HittableList, Camera) {
         image_width: 600,
         samples_per_pixel: 1024,
         max_depth: 8,
-        background: Color::ONE * 0.01,
+        background: Color::ZERO,
 
         vfov: 40.0,
         look_from: Point3::new(278.0, 278.0, -800.0),
@@ -403,9 +434,9 @@ fn main() -> std::io::Result<()> {
     println!("Building BVH: {:.2?}", now.elapsed());
 
     if args.live {
-        live_render(&camera, &bvh);
+        live_render(Arc::new(camera), Arc::new(bvh));
     } else {
-        render(&camera, &bvh, args.output);
+        render(Arc::new(camera), Arc::new(bvh), args.output);
     }
 
     Ok(())

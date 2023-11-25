@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use image::{DynamicImage, GenericImageView};
 
 use crate::{
@@ -7,7 +9,7 @@ use crate::{
     vec3::{Color, Point3},
 };
 
-pub trait Texture: Sync + Clone {
+pub trait Texture: Sync + Send {
     fn value(&self, u: FP, v: FP, p: &Point3) -> Color;
 }
 
@@ -33,27 +35,28 @@ impl Texture for SolidColor {
     }
 }
 
-#[derive(Clone)]
-pub struct CheckerTexture<E: Texture, O: Texture> {
+pub struct CheckerTexture {
     inv_scale: FP,
-    even: E,
-    odd: O,
+    even: Arc<dyn Texture>,
+    odd: Arc<dyn Texture>,
 }
-impl<E: Texture, O: Texture> CheckerTexture<E, O> {
-    pub fn new(scale: FP, even: E, odd: O) -> Self {
+impl CheckerTexture {
+    pub fn new(scale: FP, even: Arc<dyn Texture>, odd: Arc<dyn Texture>) -> Self {
         Self {
             inv_scale: 1.0 / scale,
             even,
             odd,
         }
     }
-}
-impl CheckerTexture<SolidColor, SolidColor> {
     pub fn new_from_colors(scale: FP, even: Color, odd: Color) -> Self {
-        Self::new(scale, SolidColor::from(even), SolidColor::from(odd))
+        Self::new(
+            scale,
+            Arc::new(SolidColor::from(even)),
+            Arc::new(SolidColor::from(odd)),
+        )
     }
 }
-impl<E: Texture, O: Texture> Texture for CheckerTexture<E, O> {
+impl Texture for CheckerTexture {
     fn value(&self, u: FP, v: FP, p: &Point3) -> Color {
         let x = (self.inv_scale * p.x).floor() as i32;
         let y = (self.inv_scale * p.y).floor() as i32;
@@ -66,7 +69,6 @@ impl<E: Texture, O: Texture> Texture for CheckerTexture<E, O> {
     }
 }
 
-#[derive(Clone)]
 pub struct ImageTexture {
     image: DynamicImage,
 }
@@ -90,7 +92,6 @@ impl Texture for ImageTexture {
     }
 }
 
-#[derive(Clone)]
 pub struct NoiseTexture {
     noise: Perlin,
     scale: FP,

@@ -7,9 +7,9 @@ use image::{codecs::png::CompressionType, ImageEncoder};
 use indicatif::{ProgressBar, ProgressStyle};
 use pixels::{Pixels, SurfaceTexture};
 use rayon::prelude::*;
-use std::{fs::File, time::Instant};
+use std::{fs::File, sync::Arc, time::Instant};
 
-pub fn render(camera: &Camera, world: &impl Hittable, output_file_name: String) {
+pub fn render(camera: Arc<Camera>, world: Arc<dyn Hittable>, output_file_name: String) {
     let height = camera.image_height;
     let width = camera.image_width;
     let spp = camera.samples_per_pixel;
@@ -25,23 +25,27 @@ pub fn render(camera: &Camera, world: &impl Hittable, output_file_name: String) 
     let now = Instant::now();
     let raw_pixels: Vec<Color> = (0..width * height)
         .into_par_iter()
-        .map(|screen_pos| {
-            let mut avg_color = Color::ZERO;
-            let i = screen_pos % width;
-            let j = screen_pos / width;
+        .map_init(
+            || Arc::clone(&world),
+            |world, screen_pos| {
+                let mut avg_color = Color::ZERO;
+                let i = screen_pos % width;
+                let j = screen_pos / width;
 
-            for _ in 1..=spp {
-                let r = camera.get_ray(i, j);
-                let new_color = ray_color(&r, camera.max_depth, &camera.background, world);
-                avg_color += new_color;
-            }
+                for _ in 1..=spp {
+                    let r = camera.get_ray(i, j);
+                    let new_color =
+                        ray_color(&r, camera.max_depth, &camera.background, world.as_ref());
+                    avg_color += new_color;
+                }
 
-            if screen_pos % 64 == 0 {
-                bar.inc(1);
-            }
+                if screen_pos % 64 == 0 {
+                    bar.inc(1);
+                }
 
-            avg_color
-        })
+                avg_color
+            },
+        )
         .collect();
     bar.finish();
     println!("Render time: {:.2?}", now.elapsed());
@@ -70,7 +74,7 @@ pub fn render(camera: &Camera, world: &impl Hittable, output_file_name: String) 
     }
 }
 
-pub fn live_render(camera: &Camera, world: &impl Hittable) {
+pub fn live_render(camera: Arc<Camera>, world: Arc<impl Hittable>) {
     let height = camera.image_height;
     let width = camera.image_width;
     let spp = camera.samples_per_pixel;
@@ -98,17 +102,18 @@ pub fn live_render(camera: &Camera, world: &impl Hittable) {
 
         // Draw the current frame
         if num_samples < spp {
-            raw_pixels
-                .par_iter_mut()
-                .enumerate()
-                .for_each(|(screen_pos, avg_color)| {
+            raw_pixels.par_iter_mut().enumerate().for_each_init(
+                || Arc::clone(&world),
+                |world, (screen_pos, avg_color)| {
                     let i = screen_pos % width;
                     let j = screen_pos / width;
 
                     let r = camera.get_ray(i, j);
-                    let new_color = ray_color(&r, camera.max_depth, &camera.background, world);
+                    let new_color =
+                        ray_color(&r, camera.max_depth, &camera.background, world.as_ref());
                     *avg_color += (new_color - *avg_color) / num_samples as FP;
-                });
+                },
+            );
             num_samples += 1;
 
             let frame = pixels.frame_mut();
@@ -131,7 +136,7 @@ pub fn live_render(camera: &Camera, world: &impl Hittable) {
     }
 }
 
-fn ray_color(ray: &Ray, depth: i32, background: &Color, world: &impl Hittable) -> Color {
+fn ray_color(ray: &Ray, depth: i32, background: &Color, world: &dyn Hittable) -> Color {
     if depth <= 0 {
         return Color::ZERO;
     }
