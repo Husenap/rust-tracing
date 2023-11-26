@@ -1,11 +1,15 @@
 use std::sync::Arc;
 
 use crate::{
-    aabb::AABB,
     common::FP,
     hittable::{HitRecord, Hittable, HittableList},
     material::Material,
-    vec3::{Point3, Vec3},
+    math::{
+        aabb::AABB,
+        interval::Interval,
+        ray::Ray,
+        vec3::{Point3, Vec3},
+    },
 };
 
 pub struct Quad {
@@ -94,11 +98,7 @@ impl Quad {
 }
 
 impl Hittable for Quad {
-    fn hit(
-        &self,
-        r: &crate::ray::Ray,
-        ray_t: &crate::interval::Interval,
-    ) -> Option<crate::hittable::HitRecord> {
+    fn hit(&self, r: &Ray, ray_t: &Interval) -> Option<HitRecord> {
         let denom = self.normal.dot(&r.direction);
 
         /*
@@ -132,7 +132,7 @@ impl Hittable for Quad {
         )
     }
 
-    fn bounding_box(&self) -> crate::aabb::AABB {
+    fn bounding_box(&self) -> AABB {
         self.bbox
     }
 }

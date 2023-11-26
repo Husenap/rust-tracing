@@ -3,9 +3,11 @@ use std::sync::Arc;
 use crate::{
     common::FP,
     hittable::HitRecord,
-    ray::Ray,
+    math::{
+        ray::Ray,
+        vec3::{Color, Point3, Vec3},
+    },
     texture::Texture,
-    vec3::{Color, Point3, Vec3},
 };
 
 pub trait Material: Sync + Send {

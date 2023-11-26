@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{
+use crate::math::{
     interval::Interval,
     ray::Ray,
     vec3::{Point3, Vec3},

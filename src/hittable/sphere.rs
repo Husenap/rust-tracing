@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
 use crate::{
-    aabb::AABB,
-    common::{FP, PI},
+    common::FP,
     hittable::{HitRecord, Hittable},
-    interval::Interval,
     material::Material,
-    ray::Ray,
-    vec3::{Point3, Vec3},
+    math::{
+        aabb::AABB,
+        interval::Interval,
+        ray::Ray,
+        vec3::{Point3, Vec3},
+        PI,
+    },
 };
 
 pub struct Sphere {

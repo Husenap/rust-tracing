@@ -1,6 +1,6 @@
 use crate::{
     common::FP,
-    vec3::{Point3, Vec3},
+    math::vec3::{Point3, Vec3},
 };
 
 #[derive(Default, Debug)]

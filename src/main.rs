@@ -2,40 +2,29 @@ use crate::{
     camera::Camera,
     hittable::HittableList,
     renderer::live_render,
-    sphere::Sphere,
     texture::{CheckerTexture, ImageTexture, SolidColor},
-    vec3::Point3,
 };
-use bvh::BVHNode;
 use camera::CameraSettings;
 use clap::Parser;
 use common::FP;
-use constant_medium::ConstantMedium;
-use hittable::{Hittable, RotateY, Translate};
+use hittable::bvh::BVHNode;
+use hittable::{
+    constant_medium::ConstantMedium, quad::Quad, sphere::Sphere, Hittable, RotateY, Translate,
+};
 use material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
-use quad::Quad;
+use math::vec3::{Color, Point3, Vec3};
 use rand::Rng;
 use renderer::render;
 use std::{sync::Arc, time::Instant};
 use texture::{NoiseTexture, Texture};
-use vec3::{Color, Vec3};
 
-mod aabb;
-mod bvh;
 mod camera;
-mod color;
 mod common;
-mod constant_medium;
 mod hittable;
-mod interval;
 mod material;
-mod perlin;
-mod quad;
-mod ray;
+mod math;
 mod renderer;
-mod sphere;
 mod texture;
-mod vec3;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -120,7 +109,7 @@ fn random_balls() -> (HittableList, Camera) {
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 16.0 / 9.0,
-        image_width: 600,
+        image_width: 400,
         samples_per_pixel: 128,
         max_depth: 8,
         background: Color::new(0.7, 0.8, 1.0),
@@ -623,9 +612,9 @@ fn final_scene() -> (HittableList, Camera) {
 
     let camera = Camera::new(CameraSettings {
         aspect_ratio: 1.0,
-        image_width: 800,
-        samples_per_pixel: 8192,
-        max_depth: 40,
+        image_width: 400,
+        samples_per_pixel: 1024,
+        max_depth: 8,
         background: Color::ZERO,
 
         vfov: 40.0,

@@ -1,6 +1,10 @@
 use crate::{
-    camera::Camera, color::color_to_rgb, common::FP, hittable::Hittable, interval::Interval,
-    ray::Ray, vec3::Color,
+    camera::Camera,
+    common::FP,
+    hittable::Hittable,
+    math::interval::Interval,
+    math::vec3::Color,
+    math::{color::color_to_rgb, ray::Ray},
 };
 use fltk::{app, prelude::*, window::Window};
 use image::{codecs::png::CompressionType, ImageEncoder};
@@ -97,6 +101,13 @@ pub fn live_render(camera: Arc<Camera>, world: Arc<dyn Hittable>) {
     let mut raw_pixels: Vec<Color> = vec![Color::ZERO; width * height];
     let mut num_samples = 1;
 
+    let mut filter_input = vec![0.0f32; raw_pixels.len() * 3];
+    let mut filter_output = vec![0.0f32; raw_pixels.len() * 3];
+
+    let device = oidn::Device::new();
+    let mut filter = oidn::RayTracing::new(&device);
+    filter.srgb(false).image_dimensions(width, height);
+
     while app.wait() {
         win.set_label(format!("rust-tracing [{}x{}, spp:{}]", width, height, num_samples).as_str());
 
@@ -116,12 +127,29 @@ pub fn live_render(camera: Arc<Camera>, world: Arc<dyn Hittable>) {
             );
             num_samples += 1;
 
+            for y in 0..height {
+                for x in 0..width {
+                    let p = raw_pixels[y * width + x];
+                    filter_input[3 * (y * width + x)] = p.x as f32;
+                    filter_input[3 * (y * width + x) + 1] = p.y as f32;
+                    filter_input[3 * (y * width + x) + 2] = p.z as f32;
+                }
+            }
+            filter
+                .filter(&filter_input[..], &mut filter_output[..])
+                .expect("Invalid input image dimensions?");
+
             let frame = pixels.frame_mut();
             frame
                 .par_chunks_exact_mut(4)
                 .enumerate()
                 .for_each(|(i, pixel)| {
-                    let [r, g, b] = color_to_rgb(&raw_pixels[i]);
+                    let [r, g, b] = color_to_rgb(&Color::new(
+                        filter_output[3 * i + 0] as FP,
+                        filter_output[3 * i + 1] as FP,
+                        filter_output[3 * i + 2] as FP,
+                    ));
+
                     let rgba = [r, g, b, 0xff];
                     pixel.copy_from_slice(&rgba);
                 });
