@@ -1,8 +1,20 @@
 [package]
 name = "rust-tracing"
+description = "Path tracer inspired by the Ray Tracing in One Weekend book series"
 version = "0.1.0"
 edition = "2021"
-
+license = "MIT"
+repository = "https://github.com/Husenap/rust-tracing"
+keywords = [
+  "Pathtracing",
+  "Path tracing",
+  "Raytracing",
+  "Ray tracing",
+  "Graphics",
+  "Rendering",
+  "Computer Graphics",
+]
+exclude = ["assets/*"]
 
 [dependencies]
 indicatif = "0.17.7"
@@ -12,3 +24,7 @@ rayon = "1.8.0"
 fltk = { version = "1", features = ["rwh05", "no-images", "no-pango"] }
 clap = { version = "4.4.8", features = ["derive"] }
 image = "0.24.7"
+oidn = { git = "https://github.com/Twinklebear/oidn-rs.git", rev = "e63198c" }
+
+[profile.release]
+opt-level = 3

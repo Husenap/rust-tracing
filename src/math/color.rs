@@ -1,4 +1,7 @@
-use crate::{common::FP, interval::Interval, vec3::Color};
+use crate::{
+    common::FP,
+    math::{interval::Interval, vec3::Color},
+};
 
 #[inline]
 fn linear_to_gamma(linear_component: FP) -> FP {

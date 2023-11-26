@@ -1,12 +1,20 @@
 use crate::{
-    aabb::AABB,
-    common::{degrees_to_radians, FP},
-    interval::Interval,
+    common::FP,
     material::Material,
-    ray::Ray,
-    vec3::{Point3, Vec3},
+    math::{
+        aabb::AABB,
+        degrees_to_radians,
+        interval::Interval,
+        ray::Ray,
+        vec3::{Point3, Vec3},
+    },
 };
 use std::sync::Arc;
+
+pub mod bvh;
+pub mod constant_medium;
+pub mod quad;
+pub mod sphere;
 
 pub struct HitRecord<'a> {
     pub p: Point3,

@@ -1,14 +1,11 @@
 use std::sync::Arc;
 
 use crate::{
-    aabb::AABB,
     common::FP,
     hittable::{HitRecord, Hittable},
-    interval::Interval,
     material::{Isotropic, Material},
-    ray::Ray,
+    math::{aabb::AABB, interval::Interval, ray::Ray, vec3::Color},
     texture::{SolidColor, Texture},
-    vec3::Color,
 };
 
 pub struct ConstantMedium {

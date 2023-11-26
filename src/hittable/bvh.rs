@@ -3,10 +3,8 @@ use std::{cmp::Ordering, sync::Arc};
 use rand::Rng;
 
 use crate::{
-    aabb::AABB,
     hittable::{HitRecord, Hittable, HittableList},
-    interval::Interval,
-    ray::Ray,
+    math::{aabb::AABB, interval::Interval, ray::Ray},
 };
 
 pub struct BVHNode {

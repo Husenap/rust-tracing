@@ -1,9 +1,7 @@
-use crate::common::{degrees_to_radians, FP};
-use crate::vec3::Color;
-use crate::{
-    ray::Ray,
-    vec3::{Point3, Vec3},
-};
+use crate::common::FP;
+use crate::math::degrees_to_radians;
+use crate::math::ray::Ray;
+use crate::math::vec3::{Color, Point3, Vec3};
 
 pub struct CameraSettings {
     pub aspect_ratio: FP,

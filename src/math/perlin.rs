@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::{common::FP, vec3::Vec3};
+use crate::{common::FP, math::vec3::Vec3};
 
 const POINT_COUNT: i32 = 256;
 

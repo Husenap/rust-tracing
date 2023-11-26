@@ -1,13 +1,13 @@
-use std::sync::Arc;
-
-use image::{DynamicImage, GenericImageView};
-
 use crate::{
-    color::rgb_to_color,
     common::FP,
-    perlin::Perlin,
-    vec3::{Color, Point3},
+    math::{
+        color::rgb_to_color,
+        perlin::Perlin,
+        vec3::{Color, Point3},
+    },
 };
+use image::{DynamicImage, GenericImageView};
+use std::sync::Arc;
 
 pub trait Texture: Sync + Send {
     fn value(&self, u: FP, v: FP, p: &Point3) -> Color;
