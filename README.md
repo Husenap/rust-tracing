@@ -33,6 +33,8 @@ cargo run --release -- -h
 ![](screenshots/cornell_box.png)
 #### Volumetric boxes
 ![](screenshots/cornell_smoke.png)
+#### Final Scene
+![](screenshots/final_scene.png)
 
 https://github.com/Husenap/rust-tracing/assets/6496177/c71fdf9a-9200-48f7-abb1-3478b8bf8d71
 

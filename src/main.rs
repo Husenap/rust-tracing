@@ -11,7 +11,7 @@ use camera::CameraSettings;
 use clap::Parser;
 use common::FP;
 use constant_medium::ConstantMedium;
-use hittable::{RotateY, Translate};
+use hittable::{Hittable, RotateY, Translate};
 use material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use quad::Quad;
 use rand::Rng;
@@ -44,7 +44,7 @@ struct Args {
     #[arg(short, long)]
     live: bool,
 
-    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light, 6:cornell box, 7:cornell smoke)
+    /// Chooses scene index (0:random balls, 1:two spheres, 2:earth, 3:perlin spheres, 4:quads, 5:simple light, 6:cornell box, 7:cornell smoke, 8:final scene)
     #[arg(short, long, default_value_t = 0)]
     scene: i32,
 
@@ -505,6 +505,139 @@ fn cornell_smoke() -> (HittableList, Camera) {
     (world, camera)
 }
 
+fn final_scene() -> (HittableList, Camera) {
+    let mut world = HittableList::default();
+
+    let ground: Arc<dyn Material> =
+        Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.48, 0.83, 0.53))));
+    let mut boxes1 = HittableList::default();
+
+    for i in 0..20 {
+        for j in 0..20 {
+            let side = 100.0;
+            let x0 = -1000.0 + i as FP * side;
+            let x1 = x0 + side;
+            let z0 = -1000.0 + j as FP * side;
+            let z1 = z0 + side;
+            let y0 = 0.0;
+            let y1 = rand::thread_rng().gen_range(1.0..101.0);
+            boxes1.add(Quad::cube(
+                &Point3::new(x0, y0, z0),
+                &Point3::new(x1, y1, z1),
+                Arc::clone(&ground),
+            ));
+        }
+    }
+
+    // Green Ground Boxes
+    world.add(Arc::new(BVHNode::new(&mut boxes1)));
+
+    // Light source
+    world.add(Arc::new(Quad::new(
+        Point3::new(123.0, 554.0, 147.0),
+        Vec3::RIGHT * 300.0,
+        Vec3::FORWARD * 265.0,
+        Arc::new(DiffuseLight::new(Arc::new(SolidColor::new(7.0, 7.0, 7.0)))),
+    )));
+
+    // Motion blurred sphere
+    let center1 = Point3::new(400.0, 400.0, 200.0);
+    let center2 = center1 + Vec3::RIGHT * 30.0;
+    let sphere_material = Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.7, 0.3, 0.1))));
+    world.add(Arc::new(
+        Sphere::new(center1, 50.0, sphere_material).with_target(center2),
+    ));
+
+    // Glass Sphere
+    world.add(Arc::new(Sphere::new(
+        Point3::new(260.0, 150.0, 45.0),
+        50.0,
+        Arc::new(Dielectric::new(1.5)),
+    )));
+    // Fuzzy Metal Sphere
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0.0, 150.0, 145.0),
+        50.0,
+        Arc::new(Metal::new(Color::new(0.8, 0.8, 0.9), 1.0)),
+    )));
+
+    // Subsurface Scattering Sphere
+    let boundary: Arc<dyn Hittable> = Arc::new(Sphere::new(
+        Point3::new(360.0, 150.0, 145.0),
+        70.0,
+        Arc::new(Dielectric::new(1.5)),
+    ));
+    world.add(Arc::clone(&boundary));
+    world.add(Arc::new(ConstantMedium::new_from_color(
+        boundary,
+        0.2,
+        Color::new(0.2, 0.4, 0.9),
+    )));
+
+    // Global Scene Fog
+    let boundary = Arc::new(Sphere::new(
+        Point3::ZERO,
+        5000.0,
+        Arc::new(Dielectric::new(1.5)),
+    ));
+    world.add(Arc::new(ConstantMedium::new_from_color(
+        boundary,
+        0.0001,
+        Color::ONE,
+    )));
+
+    // Earth Sphere
+    let earth_material = Arc::new(Lambertian::new(Arc::new(ImageTexture::new(
+        "assets/earth-large.jpg",
+    ))));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(400.0, 200.0, 400.0),
+        100.0,
+        earth_material,
+    )));
+
+    // Noise Sphere
+    let perlin_texture = Arc::new(NoiseTexture::new(0.1));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(220.0, 280.0, 300.0),
+        80.0,
+        Arc::new(Lambertian::new(perlin_texture)),
+    )));
+
+    // Box of Spheres
+    let mut boxes2 = HittableList::default();
+    let white: Arc<dyn Material> =
+        Arc::new(Lambertian::new(Arc::new(SolidColor::new(0.73, 0.73, 0.73))));
+    for _ in 0..1000 {
+        boxes2.add(Arc::new(Sphere::new(
+            Point3::random_range(0.0, 165.0),
+            10.0,
+            Arc::clone(&white),
+        )));
+    }
+
+    world.add(Arc::new(Translate::new(
+        Arc::new(RotateY::new(Arc::new(BVHNode::new(&mut boxes2)), 15.0)),
+        Vec3::new(-100.0, 270.0, 395.0),
+    )));
+
+    let camera = Camera::new(CameraSettings {
+        aspect_ratio: 1.0,
+        image_width: 800,
+        samples_per_pixel: 8192,
+        max_depth: 40,
+        background: Color::ZERO,
+
+        vfov: 40.0,
+        look_from: Point3::new(478.0, 278.0, -600.0),
+        look_at: Point3::new(278.0, 278.0, 0.0),
+
+        ..Default::default()
+    });
+
+    (world, camera)
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     println!("Args: {:?}", args);
@@ -518,6 +651,7 @@ fn main() -> std::io::Result<()> {
         5 => simple_light(),
         6 => cornell_box(),
         7 => cornell_smoke(),
+        8 => final_scene(),
         _ => random_balls(),
     };
 
